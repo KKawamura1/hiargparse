@@ -5,6 +5,9 @@ from typing import Dict, Set, List, Any, NamedTuple
 from .hierarchy import get_child_dest_str
 
 
+ArgumentAccepter = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+
+
 class PropagateState(enum.Enum):
     ForPropagate = enum.auto()
     Propagated = enum.auto()
@@ -87,9 +90,9 @@ class Arg:
     def _pr_add_argument(
             self,
             parser: argparse.ArgumentParser,
-            namespace_parents: List[str],
-            arguments_prefixes: List[str],
-            help_text_prefixes: List[str],
+            parent_names: List[str],
+            parent_dists: List[str],
+            argument_prefixes: List[str],
             propagate_data: Dict[str, str],
             prohibited_args: Set[str],
     ) -> _AddArgumentReturn:
@@ -97,14 +100,18 @@ class Arg:
 
         protected (visible only in this module).
         """
+
+        group_name = ''.join(['{}/'.format(name) for name in parent_names])
+        argument_group = parser.add_argument_group(group_name)
+
         # argument names
         names = list()
         for name in self._names:
-            argument_flagments = list(arguments_prefixes) + [name]
+            argument_flagments = list(argument_prefixes) + [name]
             names.append('--{}'.format('-'.join(argument_flagments)))
 
         # dest
-        dest = get_child_dest_str(namespace_parents) + self._dest
+        dest = get_child_dest_str(parent_dists) + self._dest
 
         # keyword arguments for parser
         parser_kwargs = {key: val for key, val in self._kwargs.items()}
@@ -113,7 +120,7 @@ class Arg:
         parser_kwargs['type'] = self._type
         if self._action is not None:
             parser_kwargs['action'] = self._action
-        parser_kwargs['help'] = '/{}: {}'.format('/'.join(help_text_prefixes), self._help)
+        parser_kwargs['help'] = self._help
         parser_kwargs['dest'] = dest
         parser_kwargs['metavar'] = self._metavar
 
@@ -146,7 +153,7 @@ class Arg:
             )
         else:
             # otherwise add the argument
-            parser.add_argument(*names, **parser_kwargs)
+            argument_group.add_argument(*names, **parser_kwargs)
 
             # return propagate states
             if self._propagate is None:

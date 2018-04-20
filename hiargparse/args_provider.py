@@ -1,7 +1,6 @@
 import argparse
 import hiargparse
-from typing import Iterable, AbstractSet
-from typing import Dict, Set, List, NamedTuple
+from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
 
@@ -30,8 +29,11 @@ class ArgsProvider:
             self,
             parser: argparse.ArgumentParser
     ) -> None:
-        self._add_arguments_recursively(self, parser,
-                                        list(), list(), list(), dict(), set(), set())
+        self._add_arguments_recursively(root=self, parser=parser,
+                                        parent_names=[''], parent_dists=list(),
+                                        argument_prefixes=list(),
+                                        propagate_data=dict(), prohibited_args=set(),
+                                        no_provides=set())
         if isinstance(parser, hiargparse.ArgumentParser):
             parser.register_deferring_action(self.apply_deferring_actions)
 
@@ -39,9 +41,9 @@ class ArgsProvider:
             self,
             root: 'ArgsProvider',
             parser: argparse.ArgumentParser,
-            namespace_parents: List[str],
-            arguments_prefixes: List[str],
-            help_text_prefixes: List[str],
+            parent_names: List[str],
+            parent_dists: List[str],
+            argument_prefixes: List[str],
             propagate_data: Dict[str, str],
             prohibited_args: Set[str],
             no_provides: AbstractSet[str]
@@ -51,9 +53,12 @@ class ArgsProvider:
         for arg in self._args:
             if arg.main_name in no_provides:
                 continue
-            returns = arg._pr_add_argument(parser, namespace_parents,
-                                           arguments_prefixes, help_text_prefixes,
-                                           propagate_data, prohibited_args)
+            returns = arg._pr_add_argument(parser=parser,
+                                           parent_names=parent_names,
+                                           parent_dists=parent_dists,
+                                           argument_prefixes=argument_prefixes,
+                                           propagate_data=propagate_data,
+                                           prohibited_args=prohibited_args)
             state = returns.state
             if state is PropagateState.ForPropagate:
                 # ready for propagate
@@ -72,17 +77,18 @@ class ArgsProvider:
         new_prohibited_args |= prohibited_args
         for child_provider in self._child_providers:
             provider = child_provider.cls.get_args_provider()
-            new_namespace_parents = namespace_parents + [child_provider.dest]
+            new_parent_dists = parent_dists + [child_provider.dest]
             if child_provider.prefix == '':
-                new_arguments_prefixes = arguments_prefixes
+                new_argument_prefixes = argument_prefixes
             else:
-                new_arguments_prefixes = arguments_prefixes + [child_provider.prefix]
+                new_argument_prefixes = argument_prefixes + [child_provider.prefix]
             if child_provider.name == '':
-                new_help_text_prefixes = help_text_prefixes
+                new_parent_names = parent_names
             else:
-                new_help_text_prefixes = help_text_prefixes + [child_provider.name]
-            provider._add_arguments_recursively(root, parser, new_namespace_parents,
-                                                new_arguments_prefixes, new_help_text_prefixes,
+                new_parent_names = parent_names + [child_provider.name]
+            provider._add_arguments_recursively(root, parser,
+                                                new_parent_names, new_parent_dists,
+                                                new_argument_prefixes,
                                                 new_propagate_data, new_prohibited_args,
                                                 child_provider.no_provides)
 

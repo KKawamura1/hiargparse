@@ -149,7 +149,7 @@ class Arg:
         parser_kwargs['type'] = self._type
         if self._action is not None:
             parser_kwargs['action'] = self._action
-        parser_kwargs['help'] = '{}: {}'.format('/'.join(help_text_prefixes), self._help)
+        parser_kwargs['help'] = '/{}: {}'.format('/'.join(help_text_prefixes), self._help)
         parser_kwargs['dest'] = dest
         parser_kwargs['metavar'] = self._metavar
 

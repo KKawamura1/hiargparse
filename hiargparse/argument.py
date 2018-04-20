@@ -89,7 +89,7 @@ class Arg:
 
     def _pr_add_argument(
             self,
-            parser: argparse.ArgumentParser,
+            argument_target: ArgumentAccepter,
             parent_names: List[str],
             parent_dists: List[str],
             argument_prefixes: List[str],
@@ -100,9 +100,6 @@ class Arg:
 
         protected (visible only in this module).
         """
-
-        group_name = ''.join(['{}/'.format(name) for name in parent_names])
-        argument_group = parser.add_argument_group(group_name)
 
         # argument names
         names = list()
@@ -153,7 +150,7 @@ class Arg:
             )
         else:
             # otherwise add the argument
-            argument_group.add_argument(*names, **parser_kwargs)
+            argument_target.add_argument(*names, **parser_kwargs)
 
             # return propagate states
             if self._propagate is None:

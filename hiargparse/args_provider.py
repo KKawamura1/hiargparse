@@ -50,10 +50,12 @@ class ArgsProvider:
     ) -> None:
         new_propagate_data: Dict[str, str] = dict()
         new_prohibited_args: Set[str] = set()
+        group_name = ''.join(['{}/'.format(name) for name in parent_names])
+        argument_group = parser.add_argument_group(group_name)
         for arg in self._args:
             if arg.main_name in no_provides:
                 continue
-            returns = arg._pr_add_argument(parser=parser,
+            returns = arg._pr_add_argument(argument_target=argument_group,
                                            parent_names=parent_names,
                                            parent_dists=parent_dists,
                                            argument_prefixes=argument_prefixes,

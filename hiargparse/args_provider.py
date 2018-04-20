@@ -1,4 +1,5 @@
 import argparse
+import hiargparse
 import enum
 from typing import Iterable, AbstractSet, Type, Union, Sequence, Collection, Optional
 from typing import Dict, Set, List, Any, NamedTuple
@@ -229,6 +230,8 @@ class ArgsProvider:
     ) -> None:
         self._add_arguments_recursively(self, parser,
                                         list(), list(), list(), dict(), set(), set())
+        if isinstance(parser, hiargparse.ArgumentParser):
+            parser.register_deferring_action(self.apply_deferring_actions)
 
     def _add_arguments_recursively(
             self,

@@ -1,4 +1,5 @@
 import argparse
+import hiargparse
 from typing import Any, Sequence, Tuple, List
 
 
@@ -11,7 +12,7 @@ class ArgumentParser(argparse.ArgumentParser):
             args: Sequence[str] = None,
             namespace: argparse.Namespace = None
     ) -> Tuple[argparse.Namespace, List[str]]:
-        """argparse.Namespace to hi_arg_parse.Namespace"""
+        """argparse.Namespace to hiargparse.Namespace"""
         if namespace is None:
-            namespace = argparse.Namespace()
+            namespace = hiargparse.Namespace()
         return super().parse_known_args(args, namespace)

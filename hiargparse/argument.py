@@ -38,6 +38,11 @@ class Arg:
             propagate_targets: Collection[str] = None,
             **kwargs: Any
     ) -> None:
+        # type and help seem to be conflict with python built-in
+        # rename them not to confuse IDE
+        arg_type = type
+        help_text = help
+
         # names
         names: Collection[str]
         if isinstance(name, str):
@@ -50,9 +55,9 @@ class Arg:
         if main_name is None:
             main_name = names[0]
         # default, type
-        if type is None:
+        if arg_type is None:
             if default is not None:
-                type = default.__class__
+                arg_type = default.__class__
             else:
                 raise argparse.ArgumentTypeError('type or default for argument {} must be given'
                                                  .format(main_name))
@@ -72,16 +77,16 @@ class Arg:
         default_help_text += 'type: %(type)s. '
         if default is not None:
             default_help_text += 'default: %(default)s. '
-        if help is None:
-            help = default_help_text
+        if help_text is None:
+            help_text = default_help_text
         else:
-            help = help.replace('%(default-text)s', default_help_text)
+            help_text = help_text.replace('%(default-text)s', default_help_text)
         self.main_name = main_name
         self._names = names
         self._default = default
         self._action = action
-        self._type = type
-        self._help = help
+        self._type = arg_type
+        self._help = help_text
         self._dest = dest
         self._metavar = metavar
         self._propagate = propagate

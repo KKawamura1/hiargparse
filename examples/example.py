@@ -21,7 +21,8 @@ class Son:
     def get_args_provider(cls) -> ArgsProvider:
         return ArgsProvider(
             args=[
-                Arg('hoge', 42)
+                Arg('hoge', 42),
+                Arg('piyo', 0.95, propagate=False)
             ],
             propagate_args=[
                 Arg('huga', None, type=str)
@@ -32,7 +33,7 @@ class Son:
         )
 
     def __init__(self, params: Namespace) -> None:
-        print(params.hoge, params.huga)
+        print(params.hoge, params.huga, params.piyo)
         gson = GrandSon(params._get_child('GS'))
 
 

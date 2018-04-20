@@ -3,7 +3,7 @@
 ## Usage
 
 + See ```/examples/example.py```
-+ You can use hiargparse with normal (original) argparse. See ```/examples/example_with_original.py.```
++ You can use hiargparse with normal (original) argparse. See ```/examples/example_with_original.py```.
 
 ## Requirements
 

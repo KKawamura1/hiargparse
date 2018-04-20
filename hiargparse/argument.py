@@ -38,7 +38,7 @@ class Arg:
             propagate_targets: Collection[str] = None,
             **kwargs: Any
     ) -> None:
-        # type and help seem to be conflict with python built-in
+        # type and help seem to conflict with python built-in
         # rename them not to confuse IDE
         arg_type = type
         help_text = help

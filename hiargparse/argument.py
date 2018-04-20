@@ -69,6 +69,7 @@ class Arg:
         default_help_text = '{}. '.format(main_name)
         if len(names) >= 2:
             default_help_text += '(a.k.a. {}) '.format(', '.join(names[1:]))
+        default_help_text += 'type: %(type)s. '
         if default is not None:
             default_help_text += 'default: %(default)s. '
         if help is None:

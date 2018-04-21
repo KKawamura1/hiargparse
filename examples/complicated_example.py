@@ -47,7 +47,7 @@ class Car:
                 # if you have some conflicted arguments, hiargparse will warn it.
                 # you can specify propagate=True, move it from args to propagate_args,
                 # or specify no_provides arguments in ChildProvider to supress this warnings.
-                # Arg('type', 'cool')  # uncomment to see the warning message
+                Arg('type', 'cool')  # uncomment to see the warning message
             ],
             # args propagation
             # the user can specify only the root argument

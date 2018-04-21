@@ -1,8 +1,10 @@
 import argparse
 import enum
+import warnings
 from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, NamedTuple
 from typing import Dict, Set, List, Any, Type
 from .hierarchy import get_child_dest_str
+from .exceptions import ArgumentError, ConflictWarning, PropagationError
 
 
 ArgumentAccepter = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
@@ -47,7 +49,7 @@ class Arg:
         else:
             names = name
         if not name:
-            raise argparse.ArgumentTypeError('at least one name must be given')
+            raise ArgumentError('At least one name must be given.')
         # main_name
         if main_name is None:
             main_name = names[0]
@@ -115,25 +117,26 @@ class Arg:
             propagated_from_set = {propagate_data[name] for name in self._names
                                    if name in propagate_data}
             if len(propagated_from_set) != 1:
-                # must be >= 2
+                # if not 1, it must be >= 2
                 assert propagated_from_set
-                # raise conflict error
-                raise argparse.ArgumentTypeError(
+                # propagation error; abort
+                raise PropagationError(
                     ('argument {} ([{}]) has more than 1 deferent propagation. '
                      ).format(self.main_name, ', '.join(self._names))
                 )
             propagated_from = list(propagated_from_set)[0]
-        elif any([name in prohibited_args for name in self._names]):
-            # if at least one name is in prohibited_args, then abort
-            prohibited_name = [name for name in self._names if name in prohibited_args][0]
-            raise argparse.ArgumentTypeError(
-                ('name {} has conflicts; '
-                 'please specify propagate=True '
-                 'if this conflict is your desirable operation. '
-                 ).format(prohibited_name)
-            )
         else:
-            # otherwise add the argument
+            if any([name in prohibited_args for name in self._names]):
+                # if at least one name is in prohibited_args, then warn it
+                prohibited_name = [name for name in self._names if name in prohibited_args][0]
+                # warn conflicts
+                warning_message = (
+                    'name {} has conflicts; '
+                    'please specify propagate=True if this conflict is '
+                    'your desirable operation. '
+                ).format(prohibited_name)
+                warnings.warn(ConflictWarning(warning_message))
+            # add the argument
             action: argparse.Action
             # some actions do not take some arguments
             try:

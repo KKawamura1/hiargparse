@@ -17,7 +17,7 @@ class Tire:
     def __init__(self, params: Namespace) -> None:
         repr_str = 'Tire. rad: {} {}. '.format(params.radius, params.unit_of_radius)
         if params.for_winter:
-            repr_str += 'for winter. '
+            repr_str += 'For winter. '
         else:
             repr_str += 'NOT for winter. '
         print(repr_str)

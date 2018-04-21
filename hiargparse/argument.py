@@ -152,6 +152,8 @@ class Arg:
                 default_help_text += 'type: %(type)s. '
             if action.default is not None:
                 default_help_text += 'default: %(default)s. '
+            if action.nargs == 0 and action.const is not None:
+                default_help_text += 'Use this argument to set {}. '.format(action.const)
             if action.help is None:
                 action.help = default_help_text
             else:

@@ -136,6 +136,8 @@ class Arg:
             action: argparse.Action
             # some actions do not take some arguments
             try:
+                # the stub file does not know, but I know
+                # that add_argument really returns the action
                 action = argument_target.add_argument(*names, **parser_kwargs)  # type: ignore
             except TypeError:
                 del parser_kwargs['metavar']

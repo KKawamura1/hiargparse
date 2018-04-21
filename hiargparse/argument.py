@@ -1,7 +1,7 @@
 import argparse
 import enum
 from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, NamedTuple
-from typing import Dict, Set, List, Any
+from typing import Dict, Set, List, Any, Type
 from .hierarchy import get_child_dest_str
 
 
@@ -23,6 +23,7 @@ class _AddArgumentReturn(NamedTuple):
 
 
 ValueT = TypeVar('ValueT')
+StrToValueT = Callable[[str], ValueT]
 
 
 class Arg:
@@ -32,7 +33,7 @@ class Arg:
             default: Optional[ValueT] = None,
             *,
             main_name: str = None,
-            type: Callable[[str], ValueT] = None,
+            type: Union[StrToValueT, Type[StrToValueT]] = None,
             dest: str = None,
             metavar: str = None,
             propagate: bool = None,

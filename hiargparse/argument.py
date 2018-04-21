@@ -182,6 +182,5 @@ class Arg:
 
     def _pr_to_propagatable(self) -> None:
         if self._propagate is not None and not self._propagate:
-            raise argparse.ArgumentTypeError('do not specify propagate=False '
-                                             'to propagate_arg. ')
+            raise ArgumentError('do not specify propagate=False to propagate_arg. ')
         self._propagate = True

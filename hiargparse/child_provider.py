@@ -1,6 +1,7 @@
 import argparse
 from typing import Type, AbstractSet, TYPE_CHECKING
 from typing_extensions import Protocol
+from .exceptions import ArgumentError
 
 # avoid cyclic importing
 if TYPE_CHECKING:
@@ -30,8 +31,8 @@ class ChildProvider:
         if dest is None:
             dest = name.replace('-', '_')
         if dest == '':
-            raise argparse.ArgumentTypeError('ChildProvider.dest must have '
-                                             'at least one character!')
+            raise ArgumentError('ChildProvider.dest must have '
+                                'at least one character.')
         if prefix is None:
             prefix = name
         self.cls = cls

@@ -41,7 +41,9 @@ class Car:
     def get_args_provider(cls) -> ArgsProvider:
         return ArgsProvider(
             args=[
-                Arg('radius', 21.0)
+                # you can write arbitrary help message
+                # if you want to append your message after the default, try %(default-text)s
+                Arg('radius', 21.0, help='%(default-text)s This arg is for its tires. ')
             ],
             # args propagation
             # the user can specify only the root argument

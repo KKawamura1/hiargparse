@@ -47,7 +47,7 @@ class Car:
             # the user can specify only the root argument
             # and its value is propagated to all child providers
             propagate_args=[
-                Arg('unit_of_radius', 'cm', choices=['cm', 'm', 'mm']),
+                Arg('unit-of-radius', 'cm', choices=['cm', 'm', 'mm']),
                 # you can use a different name from the propagation-target name
                 Arg('for-winter-car', action='store_true', propagate_targets=['for-winter'])
             ],

@@ -5,6 +5,7 @@ from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, Nam
 from typing import Dict, Set, List, Any, Type
 from .hierarchy import get_child_dest_str
 from .exceptions import ArgumentError, ConflictWarning, PropagationError
+from .parent_names_to_str import parent_names_to_str
 
 
 ArgumentAccepter = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
@@ -83,7 +84,7 @@ class Arg:
             parent_dists: List[str],
             argument_prefixes: List[str],
             propagate_data: Dict[str, str],
-            prohibited_args: Set[str],
+            prohibited_args: Dict[str, str],
     ) -> _AddArgumentReturn:
         """add arguments to given parser.
 
@@ -128,13 +129,15 @@ class Arg:
         else:
             if any([name in prohibited_args for name in self._names]):
                 # if at least one name is in prohibited_args, then warn it
-                prohibited_name = [name for name in self._names if name in prohibited_args][0]
-                # warn conflicts
+                conflict_name, conflict_with = [(name, prohibited_args[name])
+                                                for name in self._names
+                                                if name in prohibited_args][0]
+                conflict_arg = parent_names_to_str(parent_names + [conflict_name])
                 warning_message = (
-                    'name {} has conflicts; '
-                    'please specify propagate=True if this conflict is '
+                    'argument {} has name conflicts with argument {}; '
+                    'please specify propagate=False if this conflict is '
                     'your desirable operation. '
-                ).format(prohibited_name)
+                ).format(conflict_arg, conflict_with)
                 warnings.warn(ConflictWarning(warning_message))
             # add the argument
             action: argparse.Action

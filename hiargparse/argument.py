@@ -1,7 +1,7 @@
 import argparse
 import enum
-from typing import Union, Sequence, Collection, Optional
-from typing import Dict, Set, List, Any, NamedTuple
+from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, NamedTuple
+from typing import Dict, Set, List, Any
 from .hierarchy import get_child_dest_str
 
 
@@ -22,27 +22,23 @@ class _AddArgumentReturn(NamedTuple):
     propagated_from: Optional[str]
 
 
+ValueT = TypeVar('ValueT')
+
+
 class Arg:
     def __init__(
             self,
             name: Union[str, Sequence[str]],
-            default: Any,
+            default: Optional[ValueT] = None,
             *,
             main_name: str = None,
-            action: argparse.Action = None,
-            type: Any = None,
-            help: str = None,
+            type: Callable[[str], ValueT] = None,
             dest: str = None,
             metavar: str = None,
             propagate: bool = None,
             propagate_targets: Collection[str] = None,
             **kwargs: Any
     ) -> None:
-        # type and help seem to conflict with python built-in
-        # rename them not to confuse IDE
-        arg_type = type
-        help_text = help
-
         # names
         names: Collection[str]
         if isinstance(name, str):
@@ -55,40 +51,22 @@ class Arg:
         if main_name is None:
             main_name = names[0]
         # default, type
-        if arg_type is None:
-            if default is not None:
-                arg_type = default.__class__
-            else:
-                raise argparse.ArgumentTypeError('type or default for argument {} must be given'
-                                                 .format(main_name))
+        if type is None and default is not None:
+            type = default.__class__
         # dest
         if dest is None:
             dest = main_name.replace('-', '_')
-        # metavar
-        if metavar is None:
-            metavar = main_name.upper()
         # propagate targets
         if propagate_targets is None:
             propagate_targets = names
-        # help_text
-        default_help_text = '{}. '.format(main_name)
-        if len(names) >= 2:
-            default_help_text += '(a.k.a. {}) '.format(', '.join(names[1:]))
-        # if type is easy-to-understand one, then show it
-        if arg_type in [int, str, float, bool]:
-            default_help_text += 'type: %(type)s. '
-        if default is not None:
-            default_help_text += 'default: %(default)s. '
-        if help_text is None:
-            help_text = default_help_text
-        else:
-            help_text = help_text.replace('%(default-text)s', default_help_text)
+        # metavar
+        if metavar is None:
+            metavar = main_name.upper()
+
         self.main_name = main_name
         self._names = names
         self._default = default
-        self._action = action
-        self._type = arg_type
-        self._help = help_text
+        self._type = type
         self._dest = dest
         self._metavar = metavar
         self._propagate = propagate
@@ -120,14 +98,11 @@ class Arg:
 
         # keyword arguments for parser
         parser_kwargs = {key: val for key, val in self._kwargs.items()}
+        parser_kwargs.update(dest=dest, metavar=self._metavar)
+        if self._type is not None:
+            parser_kwargs['type'] = self._type
         if self._default is not None:
             parser_kwargs['default'] = self._default
-        parser_kwargs['type'] = self._type
-        if self._action is not None:
-            parser_kwargs['action'] = self._action
-        parser_kwargs['help'] = self._help
-        parser_kwargs['dest'] = dest
-        parser_kwargs['metavar'] = self._metavar
 
         # propagate check
         propagate_state: PropagateState
@@ -158,7 +133,27 @@ class Arg:
             )
         else:
             # otherwise add the argument
-            argument_target.add_argument(*names, **parser_kwargs)
+            action: argparse.Action
+            # some actions do not take some arguments
+            try:
+                action = argument_target.add_argument(*names, **parser_kwargs)  # type: ignore
+            except TypeError:
+                del parser_kwargs['metavar']
+                action = argument_target.add_argument(*names, **parser_kwargs)  # type: ignore
+
+            # replacing help text
+            default_help_text = '{}. '.format(self.main_name)
+            if len(self._names) >= 2:
+                default_help_text += '(a.k.a. {}) '.format(', '.join(self._names[1:]))
+            # if type is easy-to-understand one, then show it
+            if action.type in [int, str, float, bool]:
+                default_help_text += 'type: %(type)s. '
+            if action.default is not None:
+                default_help_text += 'default: %(default)s. '
+            if action.help is None:
+                action.help = default_help_text
+            else:
+                action.help = action.help.replace('%(default-text)s', default_help_text)
 
             # return propagate states
             if self._propagate is None:

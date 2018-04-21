@@ -121,9 +121,10 @@ class Arg:
                 # if not 1, it must be >= 2
                 assert propagated_from_set
                 # propagation error; abort
+                multi_propagated_arg = parent_names_to_str(parent_names + [self.main_name])
                 raise PropagationError(
                     ('argument {} ([{}]) has more than 1 deferent propagation. '
-                     ).format(self.main_name, ', '.join(self._names))
+                     ).format(multi_propagated_arg, ', '.join(self._names))
                 )
             propagated_from = list(propagated_from_set)[0]
         else:

@@ -43,7 +43,11 @@ class Car:
             args=[
                 # you can write arbitrary help message
                 # if you want to append your message after the default, try %(default-text)s
-                Arg('radius', 21.0, help='%(default-text)s This arg is for its tires. ')
+                Arg('radius', 21.0, help='%(default-text)s This arg is for its tires. '),
+                # if you have some conflicted arguments, hiargparse will warn it.
+                # you can specify propagate=True, move it from args to propagate_args,
+                # or specify no_provides arguments in ChildProvider to supress this warnings.
+                # Arg('type', 'cool')  # uncomment to see the warning message
             ],
             # args propagation
             # the user can specify only the root argument

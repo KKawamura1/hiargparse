@@ -52,7 +52,8 @@ class Car:
                 # Arg('type', 'cool')  # uncomment to see the warning message
 
                 # also, if you have some dest-conflicted arguments, hiargparse raises an error.
-                Arg('conflict', 42, dest='front_tire')  # uncomment to see the error
+                # Arg('conflict', 42, dest='front_tire')  # uncomment to see the error
+                # Arg('radius', 21, type=float)  # uncomment to see the error
             ],
             # args propagation
             # the user can specify only the root argument

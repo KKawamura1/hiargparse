@@ -11,7 +11,7 @@ class SupportsArgsProvider(Protocol):
     """Structural subtyping protocol which supports ArgsProvider."""
 
     @classmethod
-    def get_args_provider(cls) -> ArgsProvider:
+    def get_args_provider(cls) -> 'ArgsProvider':
         ...
 
 

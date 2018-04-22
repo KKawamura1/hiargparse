@@ -96,6 +96,7 @@ if __name__ == '__main__':
     params = parser.parse_args()
 
     # now you have ALL parameters including child and grandchild arguments
-    # please try to execute with --help
+    print(params)
+
     car = Car(params._get_child('Car'))
     car.print_spec()

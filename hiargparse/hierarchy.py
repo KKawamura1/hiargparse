@@ -1,9 +1,12 @@
 import argparse
-from typing import Iterable, TypeVar, List, Dict, Any, Mapping, cast
+import re
+from typing import Iterable, TypeVar, List, Tuple
 
 
-hi_symbol = '--*--'
-hi_key = hi_symbol + '{}' + '-'
+hi_symbol_before = '--*--'
+hi_symbol_after = '--@--'
+hi_key = hi_symbol_before + '{}' + hi_symbol_after
+hi_symbol_regexp = re.compile(r'^{}(.*?){}'.format(hi_symbol_before, hi_symbol_after))
 
 
 def get_child_dest_str(keys: Iterable[str]) -> str:
@@ -25,40 +28,15 @@ def get_child_namespace(namespace: SpaceT, key: str) -> SpaceT:
     return return_space
 
 
-def is_attr_name(name: str) -> bool:
-    return name[:len(hi_symbol)] != hi_symbol
+def split_child_names_and_key(name: str) -> Tuple[List[str], str]:
+    names: List[str] = list()
+    last_end = 0
+    for match in hi_symbol_regexp.finditer(name):
+        assert match.start() == last_end
+        names.append(match.group(1))
+        last_end = match.end()
+    return (names, name[last_end:])
 
 
-def namespace_to_dict(namespace: SpaceT) -> Dict[str, Any]:
-    ret_dict: Dict[str, Any] = dict()
-    for attr_name, val in namespace.__dict__.items():
-        if is_attr_name(attr_name):
-            ret_dict[attr_name] = val
-    return ret_dict
-
-
-def dict_to_namespace(
-        contents: Mapping[str, Any],
-        namespace: SpaceT = None
-) -> SpaceT:
-    if namespace is not None:
-        target = namespace
-    else:
-        target = cast(SpaceT, argparse.Namespace())
-    _dict_to_namespace_recur(contents, target, list())
-    return target
-
-
-def _dict_to_namespace_recur(
-        contents: Mapping[str, Any],
-        namespace: SpaceT,
-        parents: List[str]
-) -> None:
-    dest = get_child_dest_str(parents)
-    for key, val in contents.items():
-        if isinstance(val, dict):
-            # create child namespace
-            _dict_to_namespace_recur(val, namespace, parents + [key])
-        else:
-            key_str = dest + key
-            setattr(namespace, key_str, val)
+def is_hierarchical_key(name: str) -> bool:
+    return len(split_child_names_and_key(name)[0]) > 0

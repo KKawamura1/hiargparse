@@ -1,9 +1,12 @@
-import argparse
-from typing import Any, Dict, TypeVar, Mapping
-from .hierarchy import get_child_namespace, namespace_to_dict, dict_to_namespace
+from argparse import Namespace as OriginalNS
+from typing import Any, Dict, TypeVar, Mapping, Union, Type, List
+from .hierarchy import split_child_names_and_key
 
 
-class Namespace(argparse.Namespace):
+SpaceT = TypeVar('SpaceT', bound=OriginalNS)
+
+
+class Namespace(OriginalNS):
     """A variant of argparse.Namespace
 
     A variant with which you can
@@ -11,18 +14,24 @@ class Namespace(argparse.Namespace):
     + easily convert to / from dictionary
     """
 
-    SpaceT = TypeVar('SpaceT', bound=argparse.Namespace)
-
-    def __init__(self, copy_from: SpaceT = None) -> None:
+    def __init__(self, copy_from: Union[SpaceT, Mapping[str, Any]] = None) -> None:
         super().__init__()
         if copy_from is not None:
-            for key, val in copy_from.__dict__.items():
-                setattr(self, key, val)
+            self._update(copy_from)
 
-    # access to its child provider
-
-    def _get_child(self, key: str) -> 'Namespace':
-        return get_child_namespace(self, key)
+    # normalization from inline hierarchy to nested namespace
+    def _normalized(self: SpaceT, converts_dict: bool = True) -> SpaceT:
+        target = type(self)()
+        for long_key, val in self.__dict__.items():
+            child_names, key = split_child_names_and_key(long_key)
+            now_target = target
+            for child_name in child_names:
+                if child_name not in now_target:
+                    now_target[child_name] = type(self)()
+                assert isinstance(now_target[child_name], Namespace)
+                now_target = now_target[child_name]
+            now_target[key] = val
+        return target
 
     # dict compatibility
 
@@ -46,16 +55,80 @@ class Namespace(argparse.Namespace):
     # useful conversion methods
     # referring to collections.namedtuple
 
-    def _update(self, contents: Mapping[str, Any]) -> 'Namespace':
-        return dict_to_namespace(contents, self)
+    def _copy(self: SpaceT) -> SpaceT:
+        return type(self)(copy_from=self)
 
-    def _replace(self, **kwargs: Any) -> 'Namespace':
-        return self._update(kwargs)
+    def _update(
+            self,
+            contents: Union[OriginalNS, Mapping[str, Any]],
+            converts_dict: bool = None
+    ) -> None:
+        if isinstance(contents, OriginalNS):
+            if converts_dict is None:
+                self._update_from_namespace(contents)
+            else:
+                self._update_from_namespace(contents, converts_dict)
+        else:
+            if converts_dict is None:
+                self._update_from_dict(contents)
+            else:
+                self._update_from_dict(contents, converts_dict)
+
+    def _update_from_namespace(
+            self,
+            contents: OriginalNS,
+            converts_dict: bool = False
+    ) -> None:
+        self._update_from_dict(contents.__dict__, converts_dict)
+
+    def _update_from_dict(
+            self,
+            contents: Mapping[str, Any],
+            converts_dict: bool = True
+    ) -> None:
+        for key, val in contents.items():
+            target: Any = val
+            if isinstance(val, dict):
+                if converts_dict:
+                    target = type(self)()
+                    target._update(val, converts_dict)
+            self[key] = target
+
+    def _replaced(self: SpaceT, **kwargs: Any) -> SpaceT:
+        target = self._copy()
+        target._update(kwargs)
+        return target
 
     @classmethod
-    def _make(cls, contents: Mapping[str, Any]) -> 'Namespace':
-        namespace = Namespace()
+    def make(cls: Type[SpaceT], contents: Mapping[str, Any]) -> SpaceT:
+        namespace = cls()
         return namespace._update(contents)
 
     def _asdict(self) -> Dict[str, Any]:
-        return namespace_to_dict(self)
+        normalized = self._normalize()
+        ret_dict: Dict[str, Any] = dict()
+        for key, val in normalized.__dict__.items():
+            if isinstance(val, Namespace):
+                val = val._asdict()
+            ret_dict[key] = val
+        return ret_dict
+
+    def __str__(self) -> str:
+        type_name = type(self).__name__
+        arg_strings: List[str] = list()
+        namespace_children: Dict[str, 'Namespace'] = dict()
+        for key, val in self.__dict__.items():
+            if key.isidentifier():
+                key_str = key
+            else:
+                key_str = '\"{}\"'.format(key)
+            if isinstance(val, Namespace):
+                # defer namespaces to print them final
+                namespace_children[key_str] = val
+            else:
+                arg_strings.append('{}: {}'.format(key_str, str(val)))
+        for key_str, child in namespace_children.items():
+            arg_strings.append('{}: {}'.format(key_str, str(val)))
+        arg_string = '\n' + ', \n'.join(arg_strings)
+        arg_string = arg_string.replace('\n', '\n ') + '\n'
+        return "{}({})".format(type_name, arg_string)

@@ -32,7 +32,7 @@ class ArgumentParser(OriginalAP):
     ) -> Namespace:
         params = Namespace(super().parse_args(args, namespace))
         self._do_deferred_actions(params)
-        return params
+        return params._normalized()
 
     def _do_deferred_actions(self, params: Namespace) -> None:
         for action in self._defer_actions:

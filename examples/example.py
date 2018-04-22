@@ -34,7 +34,7 @@ class Son:
 
     def __init__(self, params: Namespace) -> None:
         print(params.hoge, params.huga, params.piyo)
-        gson = GrandSon(params._get_child('GS'))
+        gson = GrandSon(params.GS)
 
 
 if __name__ == '__main__':
@@ -53,4 +53,4 @@ if __name__ == '__main__':
     # now you have ALL parameters including child and grandchild arguments
     # please try to execute with --help
     print(params.foo)
-    son = Son(params._get_child('Son'))
+    son = Son(params.Son)

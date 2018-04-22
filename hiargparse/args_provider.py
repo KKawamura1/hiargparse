@@ -4,6 +4,7 @@ from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
 from .parent_names_to_str import parent_names_to_str
+from .exceptions import ConflictError
 
 
 class _DeferringAttribute(NamedTuple):
@@ -25,6 +26,16 @@ class ArgsProvider:
             self._args += propagate_args
         self._child_providers = child_providers
         self._deferring_attributes: List[_DeferringAttribute] = list()
+        arg_dests = [arg._dest for arg in self._args]
+        arg_dests += [provider.dest for provider in self._child_providers]
+        if len(arg_dests) != len(set(arg_dests)):
+            # dest is non-unique; abort
+            seen_dests: Set[str] = set()
+            for dest in arg_dests:
+                if dest in seen_dests:
+                    raise ConflictError('argument or child provider {} have some conflicts!'
+                                        .format(dest))
+                seen_dests.add(dest)
 
     def add_arguments(
             self,

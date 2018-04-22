@@ -1,4 +1,3 @@
-import argparse
 from typing import Type, AbstractSet, TYPE_CHECKING
 from typing_extensions import Protocol
 from .exceptions import ArgumentError

@@ -19,19 +19,21 @@ class Tire:
         )
 
     def __init__(self, params: Namespace) -> None:
-        # Namespace is accessable with getattr
-        self._radius = params.radius
+        # Namespace is accessable with __getattr__
+        self._style = params.style  # recommended
+        self._radius = getattr(params, 'radius')  # raw access
         # also getitem is supported (note that argparse.Namespace does not support this)
-        self._radius_unit = params['unit_of_radius']
+        self._radius_unit = params['unit_of_radius']  # dict-like access
         # Namespace does not memorize its type, so variable type annotation is recommended
-        self._for_winter: bool = params.for_winter
+        self._for_winter: bool = params.for_winter  # as you know it must be bool
 
     def __repr__(self) -> str:
         if self._for_winter:
             winter_str = 'for winter'
         else:
             winter_str = 'NOT for winter'
-        repr_str = '<Tire of rad: {} {} ({}) >'.format(self._radius, self._radius_unit, winter_str)
+        repr_str = ('<A {} tire of rad: {} {} ({}) >'
+                    .format(self._style, self._radius, self._radius_unit, winter_str))
         return repr_str
 
 
@@ -42,7 +44,8 @@ class Car:
             args=[
                 # you can write arbitrary help message
                 # if you want to append your message after the default, try %(default-text)s
-                Arg('radius', 21.0, help='%(default-text)s This arg is for its tires. '),
+                Arg('radius', 21, type=float,
+                    help='%(default-text)s This arg is for its tires. '),
                 # if you have some conflicted arguments, hiargparse will warn it.
                 # you can specify propagate=True/False, move it from args to propagate_args,
                 # or specify no_provides arguments in ChildProvider to supress this warnings.

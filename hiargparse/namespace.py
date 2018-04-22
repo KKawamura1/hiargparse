@@ -31,7 +31,7 @@ class Namespace(OriginalNS):
                 assert isinstance(now_target[child_name], Namespace)
                 now_target = now_target[child_name]
             now_target[key] = val
-        return now_target
+        return target
 
     # dict compatibility
 

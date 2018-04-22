@@ -46,10 +46,12 @@ class Car:
                 # if you want to append your message after the default, try %(default-text)s
                 Arg('radius', 21, type=float,
                     help='%(default-text)s This arg is for its tires. '),
-                # if you have some conflicted arguments, hiargparse will warn it.
+                # if you have some name-conflicted arguments, hiargparse will warn it.
                 # you can specify propagate=True/False, move it from args to propagate_args,
                 # or specify no_provides arguments in ChildProvider to supress this warnings.
                 # Arg('type', 'cool')  # uncomment to see the warning message
+                # also, if you have some dest-conflicted arguments, hiargparse raises an error.
+                Arg('conflict', 42, dest='front_tire')  # uncomment to see the error
             ],
             # args propagation
             # the user can specify only the root argument

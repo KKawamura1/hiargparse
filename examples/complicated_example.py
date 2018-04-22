@@ -1,4 +1,3 @@
-import argparse
 from hiargparse import ArgumentParser, Namespace
 from hiargparse import ArgsProvider, Arg, ChildProvider
 
@@ -70,11 +69,11 @@ class Car:
 
     def __init__(self, params: Namespace) -> None:
         # some additional (not from arguments) parameters
-        front_tire_params = params._get_child('front_tire')._replace(radius=params.radius)
+        front_tire_params = params.front_tire._replace(radius=params.radius)
         # multiple instances for a providers
         self._front_tires = [Tire(front_tire_params) for i in range(2)]
         # Namespace has some useful attributes; _replace, _update, _asdict, and more.
-        back_tire_params = params._get_child('back_tire')._update({'radius': params.radius + 1.0})
+        back_tire_params = params.back_tire._update({'radius': params.radius + 1.0})
         self._back_tires = [Tire(back_tire_params) for i in range(2)]
 
     def print_spec(self) -> None:
@@ -98,5 +97,5 @@ if __name__ == '__main__':
     # now you have ALL parameters including child and grandchild arguments
     print(params)
 
-    car = Car(params._get_child('Car'))
+    car = Car(params.Car)
     car.print_spec()

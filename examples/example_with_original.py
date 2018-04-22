@@ -32,4 +32,4 @@ if __name__ == '__main__':
     # now you have ALL parameters including child and grandchild arguments
     # please try to execute with --help
     print(params.foo)
-    son = Son(params._get_child('Son'))
+    son = Son(params.Son)

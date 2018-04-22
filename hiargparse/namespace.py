@@ -1,5 +1,5 @@
 from argparse import Namespace as OriginalNS
-from typing import Any, Dict, TypeVar, Mapping, Union, Type
+from typing import Any, Dict, TypeVar, Mapping, Union, Type, List
 from .hierarchy import split_child_names_and_key
 
 
@@ -112,3 +112,23 @@ class Namespace(OriginalNS):
                 val = val._asdict()
             ret_dict[key] = val
         return ret_dict
+
+    def __str__(self) -> str:
+        type_name = type(self).__name__
+        arg_strings: List[str] = list()
+        namespace_children: Dict[str, 'Namespace'] = dict()
+        for key, val in self.__dict__.items():
+            if key.isidentifier():
+                key_str = key
+            else:
+                key_str = '\"{}\"'.format(key)
+            if isinstance(val, Namespace):
+                # defer namespaces to print them final
+                namespace_children[key_str] = val
+            else:
+                arg_strings.append('{}: {}'.format(key_str, str(val)))
+        for key_str, child in namespace_children.items():
+            arg_strings.append('{}: {}'.format(key_str, str(val)))
+        arg_string = '\n' + ', \n'.join(arg_strings)
+        arg_string = arg_string.replace('\n', '\n ') + '\n'
+        return "{}({})".format(type_name, arg_string)

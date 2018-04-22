@@ -50,6 +50,7 @@ class Car:
                 # you can specify propagate=True/False, move it from args to propagate_args,
                 # or specify no_provides arguments in ChildProvider to supress this warnings.
                 # Arg('type', 'cool')  # uncomment to see the warning message
+
                 # also, if you have some dest-conflicted arguments, hiargparse raises an error.
                 Arg('conflict', 42, dest='front_tire')  # uncomment to see the error
             ],

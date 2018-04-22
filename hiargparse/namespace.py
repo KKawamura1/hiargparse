@@ -20,18 +20,18 @@ class Namespace(OriginalNS):
             self._update(copy_from)
 
     # normalization from inline hierarchy to nested namespace
-    def _normalize(self, converts_dict: bool = True) -> None:
+    def _normalized(self: SpaceT, converts_dict: bool = True) -> SpaceT:
+        target = type(self)()
         for long_key, val in self.__dict__.items():
             child_names, key = split_child_names_and_key(long_key)
-            if not child_names:
-                continue
-            target = self
+            now_target = target
             for child_name in child_names:
-                if child_name not in target:
-                    target.child_name = type(self)()
-                target = target.child_name
-            del self.long_key
-            target.key = val
+                if child_name not in now_target:
+                    now_target[child_name] = type(self)()
+                assert isinstance(now_target[child_name], Namespace)
+                now_target = now_target[child_name]
+            now_target[key] = val
+        return now_target
 
     # dict compatibility
 
@@ -105,8 +105,7 @@ class Namespace(OriginalNS):
         return namespace._update(contents)
 
     def _asdict(self) -> Dict[str, Any]:
-        normalized = self._copy()
-        normalized._normalize()
+        normalized = self._normalize()
         ret_dict: Dict[str, Any] = dict()
         for key, val in normalized.__dict__.items():
             if isinstance(val, Namespace):

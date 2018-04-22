@@ -27,7 +27,7 @@ if __name__ == '__main__':
     # do some deferred actions relating to arg propagation
     args_provider.apply_deferring_actions(params)
     # normalize params (resolve some trick used in args_provider.add_argument)
-    params._normalize()
+    params = params._normalized()
 
     # now you have ALL parameters including child and grandchild arguments
     # please try to execute with --help

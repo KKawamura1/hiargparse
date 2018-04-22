@@ -5,8 +5,9 @@ from typing import Iterable, TypeVar, List, Tuple
 
 hi_symbol_before = '--*--'
 hi_symbol_after = '--@--'
+hi_symbols = (hi_symbol_before, hi_symbol_after)
 hi_key = hi_symbol_before + '{}' + hi_symbol_after
-hi_symbol_regexp = re.compile(r'^{}(.*?){}'.format(hi_symbol_before, hi_symbol_after))
+hi_symbol_regexp = re.compile(r'{}(.*?){}'.format(*[re.escape(symb) for symb in hi_symbols]))
 
 
 def get_child_dest_str(keys: Iterable[str]) -> str:

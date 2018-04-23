@@ -7,7 +7,7 @@ from .parent_names_to_str import parent_names_to_str
 from .exceptions import ConflictError
 
 
-class _DeferringAttribute(NamedTuple):
+class _PropagateAttribute(NamedTuple):
     source: str
     target: str
 
@@ -25,7 +25,7 @@ class ArgsProvider:
                 arg._pr_to_propagatable()
             self._args += propagate_args
         self._child_providers = child_providers
-        self._deferring_attributes: List[_DeferringAttribute] = list()
+        self._propagate_attributes: List[_PropagateAttribute] = list()
         arg_dests = [arg._dest for arg in self._args]
         arg_dests += [provider.dest for provider in self._child_providers]
         if len(arg_dests) != len(set(arg_dests)):
@@ -47,7 +47,7 @@ class ArgsProvider:
                                         propagate_data=dict(), prohibited_args=dict(),
                                         no_provides=set())
         if isinstance(parser, hiargparse.ArgumentParser):
-            parser.register_deferring_action(self.apply_deferring_actions)
+            parser.register_deferring_action(self.apply_propagations)
 
     def _add_arguments_recursively(
             self,
@@ -85,9 +85,9 @@ class ArgsProvider:
             elif state is PropagateState.Propagated:
                 # set to propagate the value
                 assert returns.propagated_from is not None
-                attribute = _DeferringAttribute(source=returns.propagated_from,
+                attribute = _PropagateAttribute(source=returns.propagated_from,
                                                 target=returns.dest)
-                root._deferring_attributes.append(attribute)
+                root._propagate_attributes.append(attribute)
         new_propagate_data.update(propagate_data)
         new_prohibited_args.update(prohibited_args)
         for child_provider in self._child_providers:
@@ -107,8 +107,8 @@ class ArgsProvider:
                                                 new_propagate_data, new_prohibited_args,
                                                 child_provider.no_provides)
 
-    def apply_deferring_actions(self, namespace: argparse.Namespace) -> None:
-        for attribute in self._deferring_attributes:
+    def apply_propagations(self, namespace: argparse.Namespace) -> None:
+        for attribute in self._propagate_attributes:
             source = attribute.source
             target = attribute.target
             assert hasattr(namespace, source)

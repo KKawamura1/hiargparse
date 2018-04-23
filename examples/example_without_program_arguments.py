@@ -29,10 +29,12 @@ if __name__ == '__main__':
 
     # tired to write propagate args (like huga='hey')
     # or values you want to leave default (like hoge=42) ?
-    # an argument parser also accepts dict input :)
+    # tell your args_provider to propagate args :)
+    args_provider = Son.get_args_provider()
     parser = ArgumentParser()
-    Son.get_args_provider().add_arguments(parser)
-    son_params = parser.parse_args_from_dict(
+    args_provider.add_arguments(parser)
+    son_params = parser.get_default_parameters()  # get default parameters
+    son_params._update(
         dict(
             huga='hey', piyo=0.90,
             GS=dict(
@@ -40,4 +42,5 @@ if __name__ == '__main__':
             )
         )
     )
+    args_provider.apply_propagations(son_params)  # apply argument propagations
     son = Son(son_params)

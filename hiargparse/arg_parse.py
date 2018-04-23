@@ -1,8 +1,7 @@
+from typing import Any, Sequence, Tuple, List, Callable
 from argparse import ArgumentParser as OriginalAP
 from argparse import Namespace as OriginalNS
 from .namespace import Namespace
-
-from typing import Any, Sequence, Tuple, List, Callable
 
 
 class ArgumentParser(OriginalAP):
@@ -37,3 +36,6 @@ class ArgumentParser(OriginalAP):
     def _do_deferred_actions(self, params: Namespace) -> None:
         for action in self._defer_actions:
             action(params)
+
+    def get_default_parameters(self) -> Namespace:
+        return self.parse_args(args=list())

@@ -1,4 +1,4 @@
-from typing import Any, Sequence, Tuple, List, Callable
+from typing import Any, Sequence, Tuple, List, Callable, cast
 from argparse import ArgumentParser as OriginalAP
 from argparse import Namespace as OriginalNS
 from .namespace import Namespace
@@ -16,7 +16,9 @@ class ArgumentParser(OriginalAP):
     ) -> Tuple[Namespace, List[str]]:
         """argparse.Namespace to hiargparse.Namespace"""
         params, remains = super().parse_known_args(args, namespace)
-        return Namespace(params), remains
+        params = Namespace(params)._normalized()
+        self._do_deferred_actions(params)
+        return params, remains
 
     def register_deferring_action(
             self,
@@ -29,9 +31,9 @@ class ArgumentParser(OriginalAP):
             args: Sequence[str] = None,
             namespace: OriginalNS = None
     ) -> Namespace:
-        params = Namespace(super().parse_args(args, namespace))
-        params = params._normalized()
-        self._do_deferred_actions(params)
+        params = super().parse_args(args, namespace)
+        # I know this params has type hiargparse.Namespace instead of argparse.Namespace
+        params = cast(Namespace, params)
         return params
 
     def _do_deferred_actions(self, params: Namespace) -> None:

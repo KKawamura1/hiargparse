@@ -66,7 +66,7 @@ if __name__ == '__main__':
     # parse arguments as usual
     parser = ArgumentParser()
     parser.add_argument('-V', '--version', action='version', version='v1.0')
-    args_provider.add_arguments(parser)
+    parser.add_arguments_from_provider(args_provider)
     params = parser.parse_args()
 
     # now you have ALL parameters including child and grandchild arguments

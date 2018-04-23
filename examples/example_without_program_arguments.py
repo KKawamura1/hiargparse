@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # tell your args_provider to propagate args :)
     args_provider = Son.get_args_provider()
     parser = ArgumentParser()
-    args_provider.add_arguments_to_parser(parser)
+    parser.add_arguments_from_provider(args_provider)
     son_params = parser.get_default_parameters()  # get default parameters
     son_params._update(
         dict(

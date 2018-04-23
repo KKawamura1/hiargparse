@@ -23,14 +23,7 @@ class Namespace(OriginalNS):
     def _normalized(self: SpaceT, converts_dict: bool = True) -> SpaceT:
         target = type(self)()
         for long_key, val in self.__dict__.items():
-            child_names, key = split_child_names_and_key(long_key)
-            now_target = target
-            for child_name in child_names:
-                if child_name not in now_target:
-                    now_target[child_name] = type(self)()
-                assert isinstance(now_target[child_name], Namespace)
-                now_target = now_target[child_name]
-            now_target[key] = val
+            target._setattr_with_hierarchical_name(long_key, val)
         return target
 
     # dict compatibility
@@ -132,3 +125,21 @@ class Namespace(OriginalNS):
         arg_string = '\n' + ', \n'.join(arg_strings)
         arg_string = arg_string.replace('\n', '\n ') + '\n'
         return "{}({})".format(type_name, arg_string)
+
+    # protected methods
+
+    def _getattr_with_hierarchical_name(self, hierarchical_name: str) -> Any:
+        target = self
+        child_names, key = split_child_names_and_key(hierarchical_name)
+        for child_name in child_names:
+            target = target[child_name]
+        return target[key]
+
+    def _setattr_with_hierarchical_name(self, hierarchical_name: str, val: Any) -> None:
+        target = self
+        child_names, key = split_child_names_and_key(hierarchical_name)
+        for child_name in child_names:
+            if child_name not in target:
+                target[child_name] = type(self)()
+            target = target[child_name]
+        target[key] = val

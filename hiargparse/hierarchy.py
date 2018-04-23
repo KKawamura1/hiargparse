@@ -1,6 +1,6 @@
 import argparse
 import re
-from typing import Iterable, TypeVar, List, Tuple
+from typing import Iterable, TypeVar, List, Tuple, Mapping, Any, Dict
 
 
 hi_symbol_before = '--*--'
@@ -41,3 +41,30 @@ def split_child_names_and_key(name: str) -> Tuple[List[str], str]:
 
 def is_hierarchical_key(name: str) -> bool:
     return len(split_child_names_and_key(name)[0]) > 0
+
+
+def resolve_nested_dict(contents: Mapping[str, Any]) -> Dict[str, Any]:
+    """Convert a nested dictionary to an uniformed dictionary.
+
+    ex.\)
+    input: dict(a=1, b=dict(c=2, d=dict(e=3)))
+    output: dict(dest(a)=1, dest(b,c)=2, dest(b,d,e)=3)
+    """
+
+    target: Dict[str, Any] = dict()
+    _resolve_nested_dict_recur(target, contents, list())
+    return target
+
+
+def _resolve_nested_dict_recur(
+        target: Dict[str, Any],
+        contents: Mapping[str, Any],
+        parents: List[str]
+) -> None:
+    for key, val in contents.items():
+        if isinstance(val, dict):
+            _resolve_nested_dict_recur(target, contents=val,
+                                       parents=(parents + [key]))
+        else:
+            dest = get_child_dest_str(parents + [key])
+            target[dest] = val

@@ -112,5 +112,5 @@ class ArgsProvider:
         for attribute in self._propagate_attributes:
             source = attribute.source
             target = attribute.target
-            assert hasattr(namespace, source)
-            setattr(namespace, target, getattr(namespace, source))
+            source_value = namespace._getattr_with_hierarchical_name(source)
+            namespace._setattr_with_hierarchical_name(target, source_value)

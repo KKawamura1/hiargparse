@@ -24,10 +24,10 @@ if __name__ == '__main__':
     # here we have to write some weird code
     # cast argparse.Namespace to hiargparse.Namespace
     params = Namespace(params)
-    # do some deferred actions relating to arg propagation
-    args_provider.apply_deferring_actions(params)
     # normalize params (resolve some trick used in args_provider.add_argument)
     params = params._normalized()
+    # do some deferred actions relating to arg propagation
+    args_provider.apply_propagations(params)
 
     # now you have ALL parameters including child and grandchild arguments
     # please try to execute with --help

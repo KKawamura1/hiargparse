@@ -24,6 +24,9 @@ class WriteToFileAction(argparse.Action):
         # write configure arguments to the given file as the given type
         file_type = ConfigureFileType[namespace.file_type]
         parser.write_configure_arguments(path=values, file_type=file_type)
+        # when you want to write out a configure file,
+        # usually you want to stop this program, fill in your brand-new configure file,
+        # and then restart it, so I'll exit
         exit()
 
 

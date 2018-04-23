@@ -17,22 +17,27 @@ if __name__ == '__main__':
     print(parser.parse_args(args=[]))  # calling with args=[] passes no arguments to the parser
 
     # then here we go
-    son_params = Namespace(dict(
-        hoge=10, huga='hey', piyo=0.90,
-        GS=Namespace(dict(
-            huga='hey', piyo=0.91
-        ))
-    ))
+    son_params = Namespace(
+        dict(
+            hoge=42, huga='hey', piyo=0.90,
+            GS=dict(
+                huga='hey', piyo=0.91
+            )
+        )
+    )
     son = Son(son_params)
 
-    # tired to write propagate args (like huga='hey') many times?
-    # an argument parser also accepts dict input
+    # tired to write propagate args (like huga='hey')
+    # or values you want to leave default (like hoge=42) ?
+    # an argument parser also accepts dict input :)
     parser = ArgumentParser()
     Son.get_args_provider().add_arguments(parser)
-    son_params = parser.parse_args_from_dict(dict(
-        hoge=10, huga='hey', piyo=0.90,
-        GS=Namespace(dict(
-            huga='hey', piyo=0.91
-        ))
-    ))
+    son_params = parser.parse_args_from_dict(
+        dict(
+            huga='hey', piyo=0.90,
+            GS=dict(
+                piyo=0.91
+            )
+        )
+    )
     son = Son(son_params)

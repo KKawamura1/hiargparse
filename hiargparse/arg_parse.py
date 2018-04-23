@@ -1,7 +1,9 @@
 from typing import Any, Sequence, Tuple, List, Callable, cast, TYPE_CHECKING
 from argparse import ArgumentParser as OriginalAP
 from argparse import Namespace as OriginalNS
+from pathlib import Path
 from .namespace import Namespace
+from .configure_file_type import ConfigureFileType
 
 if TYPE_CHECKING:
     from .args_provider import ArgsProvider
@@ -51,3 +53,5 @@ class ArgumentParser(OriginalAP):
 
     def get_default_parameters(self) -> Namespace:
         return self.parse_args(args=list())
+
+    def write_configure_arguments(self, path: Path, file_type: ConfigureFileType) -> None:

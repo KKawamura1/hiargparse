@@ -17,12 +17,17 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-V', '--version', action='version', version='v1.0')
 
-    # same as example.py
-    args_provider.add_arguments_to_parser(parser)
-    params = parser.parse_args()
-
     # here we have to write some weird code
     # cast argparse.Namespace to hiargparse.Namespace
+    # invoke args_provider's method with the parser
+    # instead of parser's method with the args_provider
+    args_provider.add_arguments_to_parser(parser)
+
+    # parse_args with original parser
+    # in a tipical case, this line hides behind other library's implementation
+    params = parser.parse_args()
+
+    # convert argparse.Namespace to hiargparse.Namespace
     params = Namespace(params)
     # normalize params (resolve some trick used in args_provider.add_argument)
     params = params._normalized()

@@ -1,7 +1,10 @@
-from typing import Any, Sequence, Tuple, List, Callable, cast
+from typing import Any, Sequence, Tuple, List, Callable, cast, TYPE_CHECKING
 from argparse import ArgumentParser as OriginalAP
 from argparse import Namespace as OriginalNS
 from .namespace import Namespace
+
+if TYPE_CHECKING:
+    from .args_provider import ArgsProvider
 
 
 class ArgumentParser(OriginalAP):
@@ -20,12 +23,6 @@ class ArgumentParser(OriginalAP):
         self._do_deferred_actions(params)
         return params, remains
 
-    def register_deferring_action(
-            self,
-            action: Callable[[Namespace], None]
-    ) -> None:
-        self._defer_actions.append(action)
-
     def parse_args(
             self,
             args: Sequence[str] = None,
@@ -35,6 +32,18 @@ class ArgumentParser(OriginalAP):
         # I know this params has type hiargparse.Namespace instead of argparse.Namespace
         params = cast(Namespace, params)
         return params
+
+    def add_arguments_from_provider(
+            self,
+            provider: 'ArgsProvider'
+    ) -> None:
+        provider.add_arguments_to_parser(self)
+
+    def register_deferring_action(
+            self,
+            action: Callable[[Namespace], None]
+    ) -> None:
+        self._defer_actions.append(action)
 
     def _do_deferred_actions(self, params: Namespace) -> None:
         for action in self._defer_actions:

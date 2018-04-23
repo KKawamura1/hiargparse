@@ -8,11 +8,12 @@ from sys import exit
 
 if __name__ == '__main__':
     # set a root argument provider
+    file_type_names = [file_type.name for file_type in ConfigureFileType]
     args_provider = ArgsProvider(
         args=[
             Arg('write-to', type=Path),
             Arg('read-from', type=Path),
-            Arg('file-type', default='json', choices=['json'])
+            Arg('file-type', default='json', choices=file_type_names)
         ],
         child_providers=[ChildProvider(Son)]
     )
@@ -24,7 +25,7 @@ if __name__ == '__main__':
 
     write_to: Optional[Path] = params.write_to
     read_from: Optional[Path] = params.read_from
-    file_type: ConfigureFileType = dict(json=ConfigureFileType.json)[params.file_type]
+    file_type: ConfigureFileType = ConfigureFileType[params.file_type]
     if write_to is not None:
         # write configure arguments to the given file
         args_provider.write_configure_arguments(path=write_to, file_type=file_type)

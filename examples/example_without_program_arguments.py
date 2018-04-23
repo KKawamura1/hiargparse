@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # first of all, once try print() and you'll see the all parameters
     # (of cource this is not necessary)
     parser = ArgumentParser()
-    Son.get_args_provider().add_arguments(parser)
+    Son.get_args_provider().add_arguments_to_parser(parser)
     print(parser.parse_args(args=[]))  # calling with args=[] passes no arguments to the parser
 
     # then here we go
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # tell your args_provider to propagate args :)
     args_provider = Son.get_args_provider()
     parser = ArgumentParser()
-    args_provider.add_arguments(parser)
+    args_provider.add_arguments_to_parser(parser)
     son_params = parser.get_default_parameters()  # get default parameters
     son_params._update(
         dict(

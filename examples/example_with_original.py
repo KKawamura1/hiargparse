@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('-V', '--version', action='version', version='v1.0')
 
     # same as example.py
-    args_provider.add_arguments(parser)
+    args_provider.add_arguments_to_parser(parser)
     params = parser.parse_args()
 
     # here we have to write some weird code

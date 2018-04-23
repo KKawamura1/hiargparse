@@ -1,6 +1,7 @@
-import argparse
-import hiargparse
+from argparse import ArgumentParser as OriginalAP
 from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple
+from .arg_parse import ArgumentParser
+from .namespace import Namespace
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
 from .parent_names_to_str import parent_names_to_str
@@ -37,22 +38,22 @@ class ArgsProvider:
                                         .format(dest))
                 seen_dests.add(dest)
 
-    def add_arguments(
+    def add_arguments_to_parser(
             self,
-            parser: argparse.ArgumentParser
+            parser: OriginalAP
     ) -> None:
         self._add_arguments_recursively(root=self, parser=parser,
                                         parent_names=[''], parent_dists=list(),
                                         argument_prefixes=list(),
                                         propagate_data=dict(), prohibited_args=dict(),
                                         no_provides=set())
-        if isinstance(parser, hiargparse.ArgumentParser):
+        if isinstance(parser, ArgumentParser):
             parser.register_deferring_action(self.apply_propagations)
 
     def _add_arguments_recursively(
             self,
             root: 'ArgsProvider',
-            parser: argparse.ArgumentParser,
+            parser: OriginalAP,
             parent_names: List[str],
             parent_dists: List[str],
             argument_prefixes: List[str],
@@ -107,7 +108,7 @@ class ArgsProvider:
                                                 new_propagate_data, new_prohibited_args,
                                                 child_provider.no_provides)
 
-    def apply_propagations(self, namespace: argparse.Namespace) -> None:
+    def apply_propagations(self, namespace: Namespace) -> None:
         for attribute in self._propagate_attributes:
             source = attribute.source
             target = attribute.target

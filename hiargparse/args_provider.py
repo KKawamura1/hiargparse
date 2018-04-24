@@ -8,7 +8,7 @@ from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
 from .parent_names_to_str import parent_names_to_str
 from .exceptions import ConflictError
-from .dict_writers import AbstractDictWriter, NullWriter, RawWriter
+from . import dict_writers
 from .configure_file_type import ConfigureFileType
 
 
@@ -54,7 +54,6 @@ class ArgsProvider:
             self,
             file_type: ConfigureFileType
     ) -> str:
-        # todo
         # access to protected attributes
         help_instance = argparse.HelpFormatter(prog='')
         expand_help_text_from_action: Callable[[argparse.Action], str]
@@ -69,13 +68,19 @@ class ArgsProvider:
             metavar: str = tmp(1)[0]
             return metavar
 
-        writer = RawWriter(expand_help_text_from_action, get_metavar_from_action)
+        writer: dict_writers.AbstractDictWriter
+        if file_type is ConfigureFileType.toml:
+            writer = dict_writers.TOMLWriter(expand_help_text_from_action,
+                                             get_metavar_from_action)
+        elif file_type is ConfigureFileType.yaml:
+            writer = dict_writers.YAMLWriter(expand_help_text_from_action,
+                                             get_metavar_from_action)
         self._add_arguments_to_writer(writer)
         return writer.write_out()
 
     def _add_arguments_to_writer(
             self,
-            writer: AbstractDictWriter
+            writer: dict_writers.AbstractDictWriter
     ) -> None:
         self._add_arguments_recursively(root=self, writer=writer)
 
@@ -83,7 +88,7 @@ class ArgsProvider:
             self,
             root: 'ArgsProvider',
             parser: OriginalAP = ArgumentParser(),
-            writer: AbstractDictWriter = NullWriter(),
+            writer: dict_writers.AbstractDictWriter = dict_writers.NullWriter(),
             parent_names: List[str] = [''],
             parent_dists: List[str] = list(),
             argument_prefixes: List[str] = list(),

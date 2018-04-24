@@ -12,13 +12,9 @@ if __name__ == '__main__':
     # set a root argument provider
     file_type_names = [file_type.name for file_type in ConfigureFileType]
 
-    def str_to_file_type(x: str) -> ConfigureFileType:
-        return ConfigureFileType[x]
-
     args_provider = ArgsProvider(
         args=[
-            Arg('file-type', default='yaml', choices=file_type_names,
-                type=str_to_file_type),
+            Arg('file-type', default='toml', choices=file_type_names),
             # write-to argument
             Arg('write-to', type=Path,
                 help='%(default-text)s Write a configure file in the given path and exit. '),
@@ -36,16 +32,19 @@ if __name__ == '__main__':
     params = parser.parse_args()
 
     # write to / read from a file
+    file_type = ConfigureFileType[params.file_type]
     if params.write_to is not None:
+        path: Path = params.write_to
         # write configure arguments to the given file as the given type
-        print(args_provider.write_out_configure_arguments(params.file_type))
+        with path.open('w') as f:
+            f.write(args_provider.write_out_configure_arguments(file_type))
         # when you want to write out a configure file,
         # usually you want to stop this program, fill in your brand-new configure file,
         # and then restart it, so I'll exit
         exit()
     if params.read_from is not None:
+        path: Path = params.read_from
         # read configure arguments from the given file
-        pass
         # read_params = parser.read_configure_arguments(params.read_from)
 
         # Usually you want to overwrite the parameters from the file

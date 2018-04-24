@@ -1,11 +1,14 @@
 from argparse import ArgumentParser as OriginalAP
 from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple
+from pathlib import Path
 from .arg_parse import ArgumentParser
 from .namespace import Namespace
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
 from .parent_names_to_str import parent_names_to_str
 from .exceptions import ConflictError
+from .dict_writers import AbstractDictWriter, NullWriter
+from .configure_file_type import ConfigureFileType
 
 
 class _PropagateAttribute(NamedTuple):
@@ -42,24 +45,35 @@ class ArgsProvider:
             self,
             parser: OriginalAP
     ) -> None:
-        self._add_arguments_recursively(root=self, parser=parser,
-                                        parent_names=[''], parent_dists=list(),
-                                        argument_prefixes=list(),
-                                        propagate_data=dict(), prohibited_args=dict(),
-                                        no_provides=set())
+        self._add_arguments_recursively(root=self, parser=parser)
         if isinstance(parser, ArgumentParser):
             parser.register_deferring_action(self.apply_propagations)
+
+    def write_configure_arguments(
+            self,
+            path: Path,
+            file_type: ConfigureFileType
+    ) -> None:
+        # todo
+        pass
+
+    def _add_arguments_to_writer(
+            self,
+            writer: AbstractDictWriter
+    ) -> None:
+        self._add_arguments_recursively(root=self, writer=writer)
 
     def _add_arguments_recursively(
             self,
             root: 'ArgsProvider',
-            parser: OriginalAP,
-            parent_names: List[str],
-            parent_dists: List[str],
-            argument_prefixes: List[str],
-            propagate_data: Dict[str, str],
-            prohibited_args: Dict[str, str],
-            no_provides: AbstractSet[str]
+            parser: OriginalAP = ArgumentParser(),
+            writer: AbstractDictWriter = NullWriter(),
+            parent_names: List[str] = [''],
+            parent_dists: List[str] = list(),
+            argument_prefixes: List[str] = list(),
+            propagate_data: Dict[str, str] = dict(),
+            prohibited_args: Dict[str, str] = dict(),
+            no_provides: AbstractSet[str] = set()
     ) -> None:
         new_propagate_data: Dict[str, str] = dict()
         new_prohibited_args: Dict[str, str] = dict()
@@ -69,6 +83,7 @@ class ArgsProvider:
             if arg.main_name in no_provides:
                 continue
             returns = arg._pr_add_argument(argument_target=argument_group,
+                                           writer=writer,
                                            parent_names=parent_names,
                                            parent_dists=parent_dists,
                                            argument_prefixes=argument_prefixes,
@@ -102,11 +117,14 @@ class ArgsProvider:
                 new_parent_names = parent_names
             else:
                 new_parent_names = parent_names + [child_provider.name]
-            provider._add_arguments_recursively(root, parser,
-                                                new_parent_names, new_parent_dists,
-                                                new_argument_prefixes,
-                                                new_propagate_data, new_prohibited_args,
-                                                child_provider.no_provides)
+            with writer.make_group(child_provider.dest):
+                provider._add_arguments_recursively(root=root, parser=parser, writer=writer,
+                                                    parent_names=new_parent_names,
+                                                    parent_dists=new_parent_dists,
+                                                    argument_prefixes=new_argument_prefixes,
+                                                    propagate_data=new_propagate_data,
+                                                    prohibited_args=new_prohibited_args,
+                                                    no_provides=child_provider.no_provides)
 
     def apply_propagations(self, namespace: Namespace) -> None:
         for attribute in self._propagate_attributes:

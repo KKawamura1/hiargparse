@@ -53,5 +53,3 @@ class ArgumentParser(OriginalAP):
 
     def get_default_parameters(self) -> Namespace:
         return self.parse_args(args=list())
-
-    def write_configure_arguments(self, path: Path, file_type: ConfigureFileType) -> None:

@@ -38,14 +38,16 @@ if __name__ == '__main__':
     # write to / read from a file
     if params.write_to is not None:
         # write configure arguments to the given file as the given type
-        parser.write_configure_arguments(params.write_to, params.file_type)
+        print(args_provider.write_out_configure_arguments(params.file_type))
         # when you want to write out a configure file,
         # usually you want to stop this program, fill in your brand-new configure file,
         # and then restart it, so I'll exit
         exit()
     if params.read_from is not None:
         # read configure arguments from the given file
-        read_params = parser.read_configure_arguments(params.read_from)
+        pass
+        # read_params = parser.read_configure_arguments(params.read_from)
+
         # Usually you want to overwrite the parameters from the file
         # with the parameters from program arguments.
         # Namely, your desirable priority would be
@@ -55,7 +57,7 @@ if __name__ == '__main__':
         # 3. default values
         # (lower)
         # then you can simply overwrite read_params with params
-        params = read_params._replaced(params)
+        # params = read_params._replaced(params)
 
     # please execute with --write-to / --read-from FILE_PATH
     son = Son(params.Son)

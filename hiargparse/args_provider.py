@@ -7,8 +7,8 @@ from .namespace import Namespace
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
 from .parent_names_to_str import parent_names_to_str
-from .exceptions import ConflictError
-from . import dict_writers
+from .exceptions import ConflictError, ArgumentError
+from . import dict_writers, dict_readers
 from .configure_file_type import ConfigureFileType
 
 
@@ -41,6 +41,10 @@ class ArgsProvider:
                     raise ConflictError('argument or child provider {} have some conflicts!'
                                         .format(dest))
                 seen_dests.add(dest)
+        for child_provider in child_providers:
+            if not child_provider.name:
+                raise ArgumentError('child_provider must have a name '
+                                    'with at least one character. ')
 
     def add_arguments_to_parser(
             self,
@@ -77,6 +81,33 @@ class ArgsProvider:
                                              get_metavar_from_action)
         self._add_arguments_to_writer(writer)
         return writer.write_out()
+
+    def read_configure_arguments(
+            self,
+            document: str,
+            file_type: ConfigureFileType,
+            parser: OriginalAP = ArgumentParser()
+    ) -> Namespace:
+        reader: dict_readers.AbstractDictReader
+        if file_type is ConfigureFileType.toml:
+            raise
+        elif file_type is ConfigureFileType.yaml:
+            reader = dict_readers.YAMLReader()
+        contents = reader.to_normalized_dict(document)
+        args: List[str] = list()
+        for key, val in contents.items():
+            if val is None:
+                continue
+            args.append(key)
+            if val is True or val is False:
+                # maybe nargs = 0
+                pass
+            else:
+                args.append(str(val))
+        print(args)
+        self.add_arguments_to_parser(parser)
+        name_space = parser.parse_args(args)
+        return Namespace(name_space)
 
     def _add_arguments_to_writer(
             self,
@@ -134,11 +165,8 @@ class ArgsProvider:
                 new_argument_prefixes = argument_prefixes
             else:
                 new_argument_prefixes = argument_prefixes + [child_provider.prefix]
-            if child_provider.name == '':
-                new_parent_names = parent_names
-            else:
-                new_parent_names = parent_names + [child_provider.name]
-            with writer.make_section(child_provider.dest):
+            new_parent_names = parent_names + [child_provider.name]
+            with writer.make_section(child_provider.name):
                 provider._add_arguments_recursively(root=root, parser=parser, writer=writer,
                                                     parent_names=new_parent_names,
                                                     parent_dists=new_parent_dists,

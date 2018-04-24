@@ -52,10 +52,18 @@ class YAMLWriter(AbstractDictWriter):
             comment_outs: bool
     ) -> None:
         self._add_line('## {}'.format(comment))
-        if comment_outs:
-            self._add_line('# {}: {}'.format(name, values))
+        may_be_comment = '# ' if comment_outs else ''
+        if isinstance(values, str):
+            self._add_line('{}{}: {}'.format(may_be_comment, name, values))
+        elif not values:
+            value_str = 'true'
+            self._add_line('{}{}: {}'.format(may_be_comment, name, value_str))
         else:
-            self._add_line('{}: {}'.format(name, values))
+            self._add_line('{}{}:'.format(may_be_comment, name))
+            self._indent()
+            for value in values:
+                self._add_line('{}- {}'.format(may_be_comment, values))
+            self._dedent()
         self._add_line()
 
     def write_out(self) -> str:

@@ -1,6 +1,7 @@
 from hiargparse import ArgumentParser, Namespace
 from hiargparse import ArgsProvider, Arg, ChildProvider, ConfigureFileType
 from example import Son
+from complicated_example import Car
 
 import argparse
 from typing import Optional, Any
@@ -22,7 +23,7 @@ if __name__ == '__main__':
             Arg('read-from', type=Path,
                 help='%(default-text)s Read from the given configure file. '),
         ],
-        child_providers=[ChildProvider(Son)]
+        child_providers=[ChildProvider(Son), ChildProvider(Car)]
     )
 
     # parse arguments as usual
@@ -30,22 +31,24 @@ if __name__ == '__main__':
     parser.add_argument('-V', '--version', action='version', version='v1.0')
     parser.add_arguments_from_provider(args_provider)
     params = parser.parse_args()
+    print(params)
 
     # write to / read from a file
     file_type = ConfigureFileType[params.file_type]
     if params.write_to is not None:
-        path: Path = params.write_to
+        path_w: Path = params.write_to
         # write configure arguments to the given file as the given type
-        with path.open('w') as f:
+        with path_w.open('w') as f:
             f.write(args_provider.write_out_configure_arguments(file_type))
         # when you want to write out a configure file,
         # usually you want to stop this program, fill in your brand-new configure file,
         # and then restart it, so I'll exit
         exit()
     if params.read_from is not None:
-        path: Path = params.read_from
+        path_r: Path = params.read_from
         # read configure arguments from the given file
-        # read_params = parser.read_configure_arguments(params.read_from)
+        with path_r.open('r') as f:
+            read_params = args_provider.read_configure_arguments(f.read(), file_type)
 
         # Usually you want to overwrite the parameters from the file
         # with the parameters from program arguments.
@@ -56,7 +59,11 @@ if __name__ == '__main__':
         # 3. default values
         # (lower)
         # then you can simply overwrite read_params with params
-        # params = read_params._replaced(params)
+        print(params)
+        print(read_params)
+        read_params._update(params)
+        new_params = read_params
 
+    print(new_params)
     # please execute with --write-to / --read-from FILE_PATH
-    son = Son(params.Son)
+    son = Son(new_params.Son)

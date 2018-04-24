@@ -170,7 +170,7 @@ class Arg:
                 action.help = action.help.replace('%(default-text)s', default_help_text)
 
             # write about the argument
-            writer.add_argument(action, dest=self._dest, comment_outs=True)
+            writer.add_argument(action, dest=self._names[0], comment_outs=True)
 
             # return propagate states
             if self._propagate is None:

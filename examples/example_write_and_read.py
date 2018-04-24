@@ -8,56 +8,22 @@ from pathlib import Path
 from sys import exit
 
 
-# write file action
-class WriteToFileAction(argparse.Action):
-    def __call__(
-            self,
-            parser: argparse.ArgumentParser,
-            namespace: argparse.Namespace,
-            values: Any,
-            option_string: str = None
-    ) -> None:
-        assert isinstance(parser, ArgumentParser)
-        assert isinstance(namespace, Namespace)
-        assert isinstance(values, Path)
-        assert 'file_type' in namespace and namespace.file_type is not None
-        # write configure arguments to the given file as the given type
-        file_type = ConfigureFileType[namespace.file_type]
-        parser.write_configure_arguments(path=values, file_type=file_type)
-        # when you want to write out a configure file,
-        # usually you want to stop this program, fill in your brand-new configure file,
-        # and then restart it, so I'll exit
-        exit()
-
-
-# read file action
-class ReadFromFileAction(argparse.Action):
-    def __call__(
-            self,
-            parser: argparse.ArgumentParser,
-            namespace: argparse.Namespace,
-            values: Any,
-            option_string: str = None
-    ) -> None:
-        assert isinstance(parser, ArgumentParser)
-        assert isinstance(namespace, Namespace)
-        assert isinstance(values, Path)
-        # read configure arguments from the given file
-        new_params = parser.read_configure_arguments(path=values)
-        namespace._update(new_params)
-
-
 if __name__ == '__main__':
     # set a root argument provider
     file_type_names = [file_type.name for file_type in ConfigureFileType]
+
+    def str_to_file_type(x: str) -> ConfigureFileType:
+        return ConfigureFileType[x]
+
     args_provider = ArgsProvider(
         args=[
-            Arg('file-type', default='json', choices=file_type_names),
+            Arg('file-type', default='yaml', choices=file_type_names,
+                type=str_to_file_type),
             # write-to argument
-            Arg('write-to', type=Path, action=WriteToFileAction,
+            Arg('write-to', type=Path,
                 help='%(default-text)s Write a configure file in the given path and exit. '),
             # read-from argument
-            Arg('read-from', type=Path, action=ReadFromFileAction,
+            Arg('read-from', type=Path,
                 help='%(default-text)s Read from the given configure file. '),
         ],
         child_providers=[ChildProvider(Son)]
@@ -69,6 +35,27 @@ if __name__ == '__main__':
     parser.add_arguments_from_provider(args_provider)
     params = parser.parse_args()
 
-    # now you have ALL parameters including child and grandchild arguments
-    # please execute with --write-to FILE_PATH
+    # write to / read from a file
+    if params.write_to is not None:
+        # write configure arguments to the given file as the given type
+        parser.write_configure_arguments(params.write_to, params.file_type)
+        # when you want to write out a configure file,
+        # usually you want to stop this program, fill in your brand-new configure file,
+        # and then restart it, so I'll exit
+        exit()
+    if params.read_from is not None:
+        # read configure arguments from the given file
+        read_params = parser.read_configure_arguments(params.read_from)
+        # Usually you want to overwrite the parameters from the file
+        # with the parameters from program arguments.
+        # Namely, your desirable priority would be
+        # (higher)
+        # 1. program arguments
+        # 2. arguments written in the config file
+        # 3. default values
+        # (lower)
+        # then you can simply overwrite read_params with params
+        params = read_params._replaced(params)
+
+    # please execute with --write-to / --read-from FILE_PATH
     son = Son(params.Son)

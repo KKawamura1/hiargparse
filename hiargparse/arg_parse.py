@@ -1,9 +1,11 @@
 from typing import Any, Sequence, Tuple, List, Callable, cast, TYPE_CHECKING
 from argparse import ArgumentParser as OriginalAP
 from argparse import Namespace as OriginalNS
+import argparse
 from pathlib import Path
 from .namespace import Namespace
 from .configure_file_type import ConfigureFileType
+from .formatters import TOMLFormatter
 
 if TYPE_CHECKING:
     from .args_provider import ArgsProvider
@@ -53,3 +55,22 @@ class ArgumentParser(OriginalAP):
 
     def get_default_parameters(self) -> Namespace:
         return self.parse_args(args=list())
+
+    def write_configure_arguments(
+            self,
+            path: Path,
+            file_type: ConfigureFileType
+    ) -> None:
+        formatter = TOMLFormatter()
+        # little bad accesses to a protected attribute
+        action_groups: List[argparse._ArgumentGroup] = self._action_groups  # type: ignore
+        for action_group in action_groups:
+            title: str = action_group.title  # type: ignore
+            description: str = action_group.description  # type: ignore
+            group_actions: List[argparse.Action] = action_group._group_actions  # type: ignore
+            formatter.start_section(title)
+            formatter.add_text(description)
+            formatter.add_arguments(group_actions)
+            formatter.end_section()
+
+        print(formatter.format_help())

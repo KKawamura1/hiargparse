@@ -2,4 +2,4 @@ import enum
 
 
 class ConfigureFileType(enum.Enum):
-    json = enum.auto()
+    yaml = enum.auto()

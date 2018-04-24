@@ -6,7 +6,6 @@ from typing import Dict, Set, List, Any, Type
 from .hierarchy import get_child_dest_str
 from .exceptions import ArgumentError, ConflictWarning, PropagationError
 from .parent_names_to_str import parent_names_to_str
-from .dict_writers import AbstractDictWriter
 
 
 ArgumentAccepter = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
@@ -81,7 +80,6 @@ class Arg:
     def _pr_add_argument(
             self,
             argument_target: ArgumentAccepter,
-            writer: AbstractDictWriter,
             parent_names: List[str],
             parent_dists: List[str],
             argument_prefixes: List[str],
@@ -168,9 +166,6 @@ class Arg:
                 action.help = default_help_text
             else:
                 action.help = action.help.replace('%(default-text)s', default_help_text)
-
-            # write about the argument
-            writer.add_arg(action, dest=self._dest)
 
             # return propagate states
             if self._propagate is None:

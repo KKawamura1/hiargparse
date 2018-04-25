@@ -90,7 +90,7 @@ class ArgsProvider:
     ) -> Namespace:
         reader: dict_readers.AbstractDictReader
         if file_type is ConfigureFileType.toml:
-            raise
+            reader = dict_readers.TOMLReader()
         elif file_type is ConfigureFileType.yaml:
             reader = dict_readers.YAMLReader()
         contents = reader.to_normalized_dict(document)

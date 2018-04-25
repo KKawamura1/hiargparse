@@ -33,7 +33,6 @@ class TOMLWriter(AbstractDictWriter):
 
     def begin_section(self, name: str) -> None:
         self._section_names.append(name)
-        # self._add_line('{}: ['.format(name))
         self._add_line('[{}]'.format('.'.join(self._section_names)))
         self._indent()
 

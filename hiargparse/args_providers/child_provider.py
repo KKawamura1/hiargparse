@@ -25,7 +25,7 @@ class ChildProvider:
             no_provides: AbstractSet[str] = set()
     ) -> None:
         if name is None:
-            name = cls.__name__  # type: ignore
+            name = cls.__name__
             assert name is not None
         if dest is None:
             dest = name.replace('-', '_')

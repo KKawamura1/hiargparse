@@ -160,12 +160,20 @@ class Arg:
             if len(self._names) >= 2:
                 default_help_text += '(a.k.a. {}) '.format(', '.join(self._names[1:]))
             # if type is easy-to-understand one, then show it
-            if action.type in [int, str, float, bool]:
+            if action.type in [bool, int, float, complex, str]:
                 default_help_text += 'type: %(type)s. '
+            # default
             if action.default is not None:
                 default_help_text += 'default: %(default)s. '
+            # nargs
             if action.nargs == 0 and action.const is not None:
                 default_help_text += 'Use this argument to set {}. '.format(action.const)
+            elif isinstance(action.nargs, int) and action.nargs >= 2:
+                default_help_text += 'Please specify exactry {} arguments. '.format(action.nargs)
+            # choices
+            if action.choices is not None:
+                default_help_text += 'Choose from: %(choices)s. '
+            # set help text
             if action.help is None:
                 action.help = default_help_text
             else:

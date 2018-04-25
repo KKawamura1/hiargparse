@@ -21,8 +21,14 @@ class ArgumentParser(OriginalAP):
             namespace: OriginalNS = None
     ) -> Tuple[Namespace, List[str]]:
         """argparse.Namespace to hiargparse.Namespace"""
-        params, remains = super().parse_known_args(args, namespace)
-        params = Namespace(params)._normalized()
+        if namespace is None:
+            target_space = Namespace()
+        else:
+            target_space = Namespace(namespace)
+        params, remains = super().parse_known_args(args, target_space)
+        # I know this params has type hiargparse.Namespace instead of argparse.Namespace
+        # typeshed lacks some important features
+        params = cast(Namespace, params)
         self._do_deferred_actions(params)
         return params, remains
 

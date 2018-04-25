@@ -70,7 +70,7 @@ class Arg:
             # sequence to tuple
             metavar = tuple(metavar)
 
-        self.main_name = main_name
+        self._main_name = main_name
         self._names = names
         self._default = default
         self._type = type
@@ -79,6 +79,14 @@ class Arg:
         self._propagate = propagate
         self._propagate_targets = list(propagate_targets)
         self._kwargs = kwargs
+
+    @property
+    def main_name(self) -> str:
+        return self._main_name
+
+    @property
+    def dest(self) -> str:
+        return self._dest
 
     def _pr_add_argument(
             self,
@@ -125,7 +133,7 @@ class Arg:
                 # if not 1, it must be >= 2
                 assert propagated_from_set
                 # propagation error; abort
-                multi_propagated_arg = format_parent_names_and_key(parent_names, self.main_name)
+                multi_propagated_arg = format_parent_names_and_key(parent_names, self._main_name)
                 raise PropagationError(
                     ('argument {} ([{}]) has more than 1 deferent propagation. '
                      ).format(multi_propagated_arg, ', '.join(self._names))
@@ -156,7 +164,7 @@ class Arg:
                 action = argument_target.add_argument(*names, **parser_kwargs)  # type: ignore
 
             # replacing help text
-            default_help_text = '{}. '.format(self.main_name)
+            default_help_text = '{}. '.format(self._main_name)
             if len(self._names) >= 2:
                 default_help_text += '(a.k.a. {}) '.format(', '.join(self._names[1:]))
             # if type is easy-to-understand one, then show it

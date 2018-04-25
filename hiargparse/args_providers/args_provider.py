@@ -1,9 +1,9 @@
-import argparse
 from argparse import ArgumentParser as OriginalAP
-from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple, Callable, Any, Tuple
+from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple
 from hiargparse import ArgumentParser, Namespace
 from hiargparse.hierarchy import format_parent_names, format_parent_names_and_key
 from hiargparse.file_protocols import dict_writers, dict_readers, FileProtocol
+from hiargparse.miscs import if_none_then
 from .exceptions import ConflictError, ArgumentError
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
@@ -17,10 +17,13 @@ class _PropagateAttribute(NamedTuple):
 class ArgsProvider:
     def __init__(
             self,
-            args: Iterable[Arg] = list(),
-            child_providers: Iterable[ChildProvider] = list(),
-            propagate_args: Iterable[Arg] = list()
+            args: Iterable[Arg] = None,
+            child_providers: Iterable[ChildProvider] = None,
+            propagate_args: Iterable[Arg] = None
     ) -> None:
+        args = if_none_then(args, [])
+        child_providers = if_none_then(child_providers, [])
+        propagate_args = if_none_then(propagate_args, [])
         self._args = list(args)
         if propagate_args:
             for arg in propagate_args:
@@ -28,7 +31,7 @@ class ArgsProvider:
             self._args += propagate_args
         self._child_providers = child_providers
         self._propagate_attributes: List[_PropagateAttribute] = list()
-        arg_dests = [arg._dest for arg in self._args]
+        arg_dests = [arg.dest for arg in self._args]
         arg_dests += [provider.dest for provider in self._child_providers]
         if len(arg_dests) != len(set(arg_dests)):
             # dest is non-unique; abort

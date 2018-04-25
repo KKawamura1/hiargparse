@@ -31,7 +31,6 @@ if __name__ == '__main__':
     parser.add_argument('-V', '--version', action='version', version='v1.0')
     parser.add_arguments_from_provider(args_provider)
     params = parser.parse_args()
-    print(params)
 
     # write to / read from a file
     file_type = ConfigureFileType[params.file_type]

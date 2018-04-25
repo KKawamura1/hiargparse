@@ -7,7 +7,7 @@ class TOMLWriter(AbstractDictWriter):
     def __init__(
             self,
             expand_help_text_from_action: Callable[[Action], str],
-            get_metavar_from_action: Callable[[Action], str],
+            get_metavar_from_action: Callable[[Action], List[str]],
             indent_size: int = 2
     ) -> None:
         self._expand_help_text_from_action = expand_help_text_from_action
@@ -28,7 +28,7 @@ class TOMLWriter(AbstractDictWriter):
     def expand_help_text_from_action(self, action: Action) -> str:
         return self._expand_help_text_from_action(action)
 
-    def get_metavar_from_action(self, action: Action) -> str:
+    def get_metavar_from_action(self, action: Action) -> List[str]:
         return self._get_metavar_from_action(action)
 
     def begin_section(self, name: str) -> None:

@@ -121,7 +121,7 @@ class Namespace(OriginalNS):
             else:
                 arg_strings.append('{}: {}'.format(key_str, str(val)))
         for key_str, child in namespace_children.items():
-            arg_strings.append('{}: {}'.format(key_str, str(val)))
+            arg_strings.append('{}: {}'.format(key_str, str(child)))
         arg_string = '\n' + ', \n'.join(arg_strings)
         arg_string = arg_string.replace('\n', '\n ') + '\n'
         return "{}({})".format(type_name, arg_string)

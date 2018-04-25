@@ -111,7 +111,7 @@ class Namespace(OriginalNS):
         if isinstance(contents, Namespace):
             copy_from = contents._sequential_data
         else:
-            copy_from = contents._get_kwargs()
+            copy_from = contents.__dict__
         self._update_from_dict(copy_from, converts_dict)
 
     def _update_from_dict(
@@ -226,14 +226,6 @@ class Namespace(OriginalNS):
                     break
                 target = target._hierarchical_data[child_name]
             val = target._hierarchical_data[remains_name]
-
-            if not isinstance(val, Namespace):
-                print(type(val), val)
-                print(str(self))
-                print(repr(self))
-                print(self._sequential_data)
-                print(self._hierarchical_data)
-
             assert isinstance(val, Namespace)
             return val
         except KeyError as exc:

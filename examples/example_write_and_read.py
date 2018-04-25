@@ -59,7 +59,6 @@ if __name__ == '__main__':
         # 3. default values
         # (lower)
         # then you can simply overwrite read_params with reloading arguments
-        print(read_params)
         params = parser.parse_args(namespace=read_params)
 
     print(params)

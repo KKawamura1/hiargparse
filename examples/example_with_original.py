@@ -24,13 +24,11 @@ if __name__ == '__main__':
     args_provider.add_arguments_to_parser(parser)
 
     # parse_args with original parser
-    # in a tipical case, this line hides behind other library's implementation
+    # in a tipical case, this line hides behind other libraries' implementation
     params = parser.parse_args()
 
     # convert argparse.Namespace to hiargparse.Namespace
     params = Namespace(params)
-    # normalize params (resolve some trick used in args_provider.add_argument)
-    params = params._normalized()
     # do some deferred actions relating to arg propagation
     args_provider.apply_propagations(params)
 

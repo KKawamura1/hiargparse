@@ -107,7 +107,6 @@ class ArgsProvider:
                     args.append(str(v))
             else:
                 args.append(str(val))
-        print(args)
         self.add_arguments_to_parser(parser)
         name_space = parser.parse_args(args)
         return Namespace(name_space)

@@ -3,9 +3,9 @@ import enum
 import warnings
 from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, NamedTuple
 from typing import Dict, Set, List, Any, Type
-from .hierarchy import parents_and_key_to_long_key, format_parent_names_and_key
 from .exceptions import ArgumentError, ConflictWarning, PropagationError
-from .file_protocols.dict_writers import AbstractDictWriter
+from ..hierarchy import parents_and_key_to_long_key, format_parent_names_and_key
+from ..file_protocols.dict_writers import AbstractDictWriter
 
 
 ArgumentAccepter = Union[argparse.ArgumentParser, argparse._ArgumentGroup]

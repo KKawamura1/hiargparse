@@ -1,5 +1,6 @@
 from hiargparse import ArgumentParser, Namespace
 from hiargparse import ArgsProvider, Arg, ChildProvider
+from typing import Optional, List
 
 
 class Tire:
@@ -16,7 +17,7 @@ class Tire:
                 # multiple names, multiple values
                 Arg(['style', 'type'], ['cool'], nargs='+'),
                 # dest is set names[0] by default; you can change the destination as you like
-                Arg(['value-in-dollar', 'how-much-in-dollar'], 1e+3, dest='value')
+                Arg(['value-in-dollar', 'how-much-in-dollar'], 1e+3, dest='value'),
             ]
         )
 
@@ -43,12 +44,25 @@ class Tire:
 class Car:
     @classmethod
     def get_args_provider(cls) -> ArgsProvider:
+        def complicated_type(arg: str) -> complex:
+            # do your stuff
+            try:
+                val = complex(arg)
+            except ValueError:
+                val = 0
+            return val
+
         return ArgsProvider(
             args=[
                 # you can write arbitrary help message
                 # if you want to append your message after the default, try %(default-text)s
-                Arg('radius', 21.0, type=float,
+                Arg('tire-radius', 21.0, type=float,
                     help='%(default-text)s This arg is for its tires. '),
+
+                # Complicated type, nargs, metavars are OK
+                Arg('numbers-you-like', type=complicated_type,
+                    nargs=3, metavar=('Hop', 'Step', 'Jump'))
+
                 # if you have some name-conflicted arguments, hiargparse will warn it.
                 # you can specify propagate=True/False, move it from args to propagate_args,
                 # or specify no_provides arguments in ChildProvider to supress this warnings.
@@ -78,13 +92,16 @@ class Car:
         )
 
     def __init__(self, params: Namespace) -> None:
-        # some additional (not from arguments) parameters
-        front_tire_params = params.front_tire._replaced(radius=params.radius)
+        # parameters for Car
+        self._numbers: Optional[List[complex]] = params.numbers_you_like
+
+        # some additional (not from arguments) parameters for Tire
+        front_tire_params = params.front_tire._replaced(radius=params.tire_radius)
         # multiple instances for a providers
         self._front_tires = [Tire(front_tire_params) for i in range(2)]
         # Namespace has some useful attributes; _replaced, _update, _asdict, and more.
         back_tire_params = params.back_tire
-        back_tire_params._update({'radius': params.radius + 1.0})
+        back_tire_params._update({'radius': params.tire_radius + 1.0})
         # of course you can use normal access to the attribute
         back_tire_params.value *= 2
         self._back_tires = [Tire(back_tire_params) for i in range(2)]
@@ -93,6 +110,8 @@ class Car:
         print('Car: ')
         print('front tires: {}'.format(', '.join([str(tire) for tire in self._front_tires])))
         print('back tires: {}'.format(', '.join([str(tire) for tire in self._back_tires])))
+        if self._numbers is not None:
+            print('by the way, I like {} hahaha'.format(', '.join([str(n) for n in self._numbers])))
 
 
 if __name__ == '__main__':

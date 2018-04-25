@@ -1,9 +1,15 @@
 from argparse import Namespace as OriginalNS
-from typing import Any, Dict, TypeVar, Mapping, Union, Type, List
+from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, NamedTuple, Generic
 from .hierarchy import split_child_names_and_key
+from .origin_type import OriginType
 
 
 SpaceT = TypeVar('SpaceT', bound=OriginalNS)
+
+
+class Attr(NamedTuple):
+    value: Any
+    origin: OriginType
 
 
 class Namespace(OriginalNS):
@@ -12,12 +18,35 @@ class Namespace(OriginalNS):
     A variant with which you can
     + easily access to its child provider
     + easily convert to / from dictionary
+    + store data in its separate dictionary instead of direct access
     """
 
     def __init__(self, copy_from: Union[SpaceT, Mapping[str, Any]] = None) -> None:
         super().__init__()
+        self._data: Dict[str, Attr] = dict()
         if copy_from is not None:
             self._update(copy_from)
+
+    # access to attributes
+
+    def __keycheck(self, key: Any) -> bool:
+        if not isinstance(key, str):
+            raise TypeError('key {} must be str, not {}'
+                            .format(key, type(key)))
+        return True
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        self._setattr_with_origin(key, value, origin=OriginType.Unknown)
+
+    def __getattr__(self, key: str) -> Any:
+        self._getattr_with_origin(key).value
+
+    def __delattr__(self, key: str) -> None:
+        try:
+            del self._data[key]
+        except KeyError:
+            error_msg = '\'{}\' object has no attribute \'{}\''.format(type(self), key)
+            raise AttributeError(error_msg) from None
 
     # normalization from inline hierarchy to nested namespace
     def _normalized(self: SpaceT, converts_dict: bool = True) -> SpaceT:
@@ -28,21 +57,13 @@ class Namespace(OriginalNS):
 
     # dict compatibility
 
-    def __keycheck(self, key: Any) -> None:
-        if not isinstance(key, str):
-            raise TypeError('key {} must be str, not {}'
-                            .format(key, type(key)))
-
     def __getitem__(self, key: str) -> Any:
-        self.__keycheck(key)
         return getattr(self, key)
 
     def __setitem__(self, key: str, value: Any) -> None:
-        self.__keycheck(key)
         setattr(self, key, value)
 
     def __delitem__(self, key: str) -> None:
-        self.__keycheck(key)
         delattr(self, key)
 
     # useful conversion methods
@@ -143,3 +164,15 @@ class Namespace(OriginalNS):
                 target[child_name] = type(self)()
             target = target[child_name]
         target[key] = val
+
+    def _setattr_with_origin(self, key: str, value: Any, origin: OriginType) -> None:
+        assert self.__keycheck(key)
+        self._data[key] = Attr(value=value, origin=origin)
+
+    def _getattr_with_origin(self, key: str) -> Attr:
+        try:
+            value = self._data[key]
+        except KeyError:
+            error_msg = '\'{}\' object has no attribute \'{}\''.format(type(self), key)
+            raise AttributeError(error_msg) from None
+        return value

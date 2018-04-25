@@ -4,7 +4,6 @@ from argparse import Namespace as OriginalNS
 import argparse
 from pathlib import Path
 from .namespace import Namespace
-from .configure_file_type import ConfigureFileType
 
 if TYPE_CHECKING:
     from .args_provider import ArgsProvider

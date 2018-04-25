@@ -8,8 +8,7 @@ from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
 from .parent_names_to_str import parent_names_to_str
 from .exceptions import ConflictError, ArgumentError
-from . import dict_writers, dict_readers
-from .configure_file_type import ConfigureFileType
+from .file_protocols import dict_writers, dict_readers, FileProtocol
 
 
 class _PropagateAttribute(NamedTuple):
@@ -56,7 +55,7 @@ class ArgsProvider:
 
     def write_out_configure_arguments(
             self,
-            file_type: ConfigureFileType
+            file_protocol: FileProtocol
     ) -> str:
         # access to protected attributes
         help_instance = argparse.HelpFormatter(prog='')
@@ -72,27 +71,17 @@ class ArgsProvider:
             metavar: Tuple[str, ...] = tmp(1)
             return list(metavar)
 
-        writer: dict_writers.AbstractDictWriter
-        if file_type is ConfigureFileType.toml:
-            writer = dict_writers.TOMLWriter(expand_help_text_from_action,
-                                             get_metavar_from_action)
-        elif file_type is ConfigureFileType.yaml:
-            writer = dict_writers.YAMLWriter(expand_help_text_from_action,
-                                             get_metavar_from_action)
+        writer: dict_writers.AbstractDictWriter = file_protocol.get_writer()
         self._add_arguments_to_writer(writer)
         return writer.write_out()
 
     def read_configure_arguments(
             self,
             document: str,
-            file_type: ConfigureFileType,
+            file_protocol: FileProtocol,
             parser: OriginalAP = ArgumentParser()
     ) -> Namespace:
-        reader: dict_readers.AbstractDictReader
-        if file_type is ConfigureFileType.toml:
-            reader = dict_readers.TOMLReader()
-        elif file_type is ConfigureFileType.yaml:
-            reader = dict_readers.YAMLReader()
+        reader: dict_readers.AbstractDictReader = file_protocol.get_reader()
         contents = reader.to_normalized_dict(document)
         args: List[str] = list()
         for key, val in contents.items():

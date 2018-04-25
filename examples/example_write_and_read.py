@@ -58,11 +58,9 @@ if __name__ == '__main__':
         # 2. arguments written in the config file
         # 3. default values
         # (lower)
-        # then you can simply overwrite read_params with params
-        print(params)
+        # then you can simply overwrite read_params with reloading arguments
         print(read_params)
-        read_params._update(params)
-        params = read_params
+        params = parser.parse_args(namespace=read_params)
 
     print(params)
     # please execute with --write-to / --read-from FILE_PATH

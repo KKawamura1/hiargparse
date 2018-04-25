@@ -1,5 +1,5 @@
 from argparse import Namespace as OriginalNS
-from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, Generator, ClassVar, Tuple, ItemsView
+from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, Generator, ClassVar, ItemsView
 from .hierarchy import pop_child_name, get_child_dest_str
 
 

@@ -8,13 +8,15 @@ class Tire:
         return ArgsProvider(
             args=[
                 # type can be specified; if not, default.__class__ is used
-                Arg('radius', 21, type=float),
+                Arg('radius', 21.0, type=float),
                 # choices
                 Arg('unit-of-radius', 'cm', choices=['cm', 'm', 'mm']),
                 # store_true action
                 Arg('for-winter', action='store_true'),
-                # multiple names
-                Arg(['style', 'type'], 'cool')
+                # multiple names, multiple values
+                Arg(['style', 'type'], ['cool'], nargs='+'),
+                # dest is set names[0] by default; you can change the destination as you like
+                Arg(['value-in-dollar', 'how-much-in-dollar'], 1e+3, dest='value')
             ]
         )
 
@@ -26,14 +28,15 @@ class Tire:
         self._radius_unit = params['unit_of_radius']  # dict-like access
         # Namespace does not memorize its type, so variable type annotation is recommended
         self._for_winter: bool = params.for_winter  # as you know it must be bool
+        self._value: float = params.value
 
     def __repr__(self) -> str:
         if self._for_winter:
             winter_str = 'for winter'
         else:
             winter_str = 'NOT for winter'
-        repr_str = ('<A {} tire of rad: {} {} ({}) >'
-                    .format(self._style, self._radius, self._radius_unit, winter_str))
+        repr_str = ('<A {} tire of rad: {} {} ({}). {} dollars. >'
+                    .format(self._style, self._radius, self._radius_unit, winter_str, self._value))
         return repr_str
 
 
@@ -44,7 +47,7 @@ class Car:
             args=[
                 # you can write arbitrary help message
                 # if you want to append your message after the default, try %(default-text)s
-                Arg('radius', 21, type=float,
+                Arg('radius', 21.0, type=float,
                     help='%(default-text)s This arg is for its tires. '),
                 # if you have some name-conflicted arguments, hiargparse will warn it.
                 # you can specify propagate=True/False, move it from args to propagate_args,
@@ -56,7 +59,7 @@ class Car:
                 # Arg('radius', 21, type=float)  # uncomment to see the error
             ],
             # args propagation
-            # the user can specify only the root argument
+            # users can specify only the root argument
             # and its value is propagated to all child providers
             propagate_args=[
                 Arg('unit-of-radius', 'cm', choices=['cm', 'm', 'mm']),
@@ -82,6 +85,8 @@ class Car:
         # Namespace has some useful attributes; _replaced, _update, _asdict, and more.
         back_tire_params = params.back_tire
         back_tire_params._update({'radius': params.radius + 1.0})
+        # of course you can use normal access to the attribute
+        back_tire_params.value *= 2
         self._back_tires = [Tire(back_tire_params) for i in range(2)]
 
     def print_spec(self) -> None:
@@ -99,7 +104,7 @@ if __name__ == '__main__':
     # quite usual argparse way except *new code* line
     parser = ArgumentParser()
     parser.add_argument('-V', '--version', action='version', version='v1.0')
-    args_provider.add_arguments(parser)  # *new code*
+    args_provider.add_arguments_to_parser(parser)  # *new code*
     params = parser.parse_args()
 
     # now you have ALL parameters including child and grandchild arguments

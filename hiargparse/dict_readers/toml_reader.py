@@ -21,9 +21,9 @@ class TOMLReader(AbstractDictReader):
                 # force raise ImportError
                 import toml  # noqa: F401,F811
             except ImportError as exc:
-                additional_message = (': this error happens because {} want to use it'
-                                      .format(type(self)))
-                raise type(exc)(str(exc) + additional_message)
+                additional_message = (': this error happens because {} want to use it.'
+                                      .format(type(self).__name__))
+                raise type(exc)(str(exc) + additional_message) from exc
 
     def to_normalized_dict(self, input_documents: str) -> Dict[str, Any]:
         nested = self._to_nested_dict(input_documents)

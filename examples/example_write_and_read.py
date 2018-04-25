@@ -64,6 +64,6 @@ if __name__ == '__main__':
         read_params._update(params)
         params = read_params
 
-    print(new_params)
+    print(params)
     # please execute with --write-to / --read-from FILE_PATH
     son = Son(params.Son)

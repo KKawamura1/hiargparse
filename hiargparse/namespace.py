@@ -219,6 +219,7 @@ class Namespace(OriginalNS):
         # search in hierarchical data
         try:
             target = self
+            remains = hierarchical_name
             for parent, remains in iter_parents(hierarchical_name):
                 target = target._hierarchical_data[parent]
             val = target._hierarchical_data[remains]

@@ -41,6 +41,7 @@ def iter_parents(name: str) -> Generator[Tuple[str, str], None, None]:
 
 def long_key_to_parents_and_key(name: str) -> Tuple[List[str], str]:
     names: List[str] = list()
+    remains = name
     for parent, remains in iter_parents(name):
         names.append(parent)
     return names, remains

@@ -62,7 +62,7 @@ class YAMLWriter(AbstractDictWriter):
             self._add_line('{}{}:'.format(may_be_comment, name))
             self._indent()
             for value in values:
-                self._add_line('{}- {}'.format(may_be_comment, values))
+                self._add_line('{}- {}'.format(may_be_comment, value))
             self._dedent()
         self._add_line()
 

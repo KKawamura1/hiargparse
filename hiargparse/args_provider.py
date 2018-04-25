@@ -102,6 +102,9 @@ class ArgsProvider:
             if val is True or val is False:
                 # maybe nargs = 0
                 pass
+            elif isinstance(val, (list, tuple)):
+                for v in val:
+                    args.append(str(v))
             else:
                 args.append(str(val))
         print(args)

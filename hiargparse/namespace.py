@@ -1,6 +1,6 @@
 from argparse import Namespace as OriginalNS
-from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, NamedTuple, Generator
-from .hierarchy import split_child_names_and_key
+from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, Generator, ClassVar, Tuple, ItemsView
+from .hierarchy import pop_child_name, get_child_dest_str
 
 
 SpaceT = TypeVar('SpaceT', bound=OriginalNS)
@@ -15,16 +15,19 @@ class Namespace(OriginalNS):
     + store data in its separate dictionary instead of direct access
     """
 
+    _container_set: ClassVar[str] = '==CONTAINER-SET=='
+
     def __init__(self, copy_from: Union[SpaceT, Mapping[str, Any]] = None) -> None:
-        super().__init__()
         self._sequential_data: Dict[str, Any] = dict()
         self._hierarchical_data: Dict[str, Any] = dict()
+        self._set_injection()
+        super().__init__()
         if copy_from is not None:
             self._update(copy_from)
 
     # override superclass attribute
-    def _get_kwargs(self) -> Dict[str, Any]:
-        return self._hierarchical_data
+    def _get_kwargs(self) -> ItemsView[str, Any]:
+        return self._hierarchical_data.items()
 
     # access to attributes
 
@@ -35,6 +38,14 @@ class Namespace(OriginalNS):
         return True
 
     def __setattr__(self, key: str, value: Any) -> None:
+        # if _container_set not in self:
+        try:
+            object.__getattribute__(self, Namespace._container_set)
+        except AttributeError:
+            # then call normal method
+            super().__setattr__(key, value)
+            return
+        # otherwise method injection occurred
         self._setattr_with_hierarchical_name(key, value)
 
     def __getattr__(self, key: str) -> Any:
@@ -108,14 +119,21 @@ class Namespace(OriginalNS):
             contents: Mapping[str, Any],
             converts_dict: bool = True
     ) -> None:
+        self._update_from_dict_recur(contents, converts_dict, parents=list())
+
+    def _update_from_dict_recur(
+            self,
+            contents: Mapping[str, Any],
+            converts_dict: bool,
+            parents: List[str]
+    ) -> None:
         for key, val in contents.items():
-            target: Any
             if isinstance(val, dict) and converts_dict:
-                target = type(self)()
-                target._update(val, converts_dict)
+                new_parents = parents + [key]
+                self._update_from_dict_recur(val, converts_dict, new_parents)
             else:
-                target = val
-            self[key] = target
+                new_key = get_child_dest_str(parents) + key
+                self[new_key] = val
 
     def _replaced(self: SpaceT, **kwargs: Any) -> SpaceT:
         target = self._copy()
@@ -171,14 +189,18 @@ class Namespace(OriginalNS):
             # because it may break the hierarchical structure.
             raise TypeError('value {} must not be Namespace, yours is {}'
                             .format(val, type(val)))
+        # set sequential data
         self._sequential_data[hierarchical_name] = val
-        target = self
-        child_names, key = split_child_names_and_key(hierarchical_name)
-        for child_name in child_names:
-            if child_name not in target:
-                target._hierarchical_data[child_name] = type(self)()  # initialize with Namespace
-            target = target._hierarchical_data[child_name]
-        target._hierarchical_data[key] = val
+
+        # set hierarchical data
+        child_name, remain_key = pop_child_name(hierarchical_name)
+        if child_name is None:
+            self._hierarchical_data[remain_key] = val
+        else:
+            if child_name not in self:
+                self._hierarchical_data[child_name] = type(self)()  # initialize with Namespace
+            assert isinstance(self[child_name], Namespace)
+            self[child_name][remain_key] = val  # recursively registering
 
     def _getattr_with_hierarchical_name(self, hierarchical_name: str) -> Any:
         """get attribute
@@ -197,10 +219,21 @@ class Namespace(OriginalNS):
         # search in hierarchical data
         try:
             target = self
-            child_names, key = split_child_names_and_key(hierarchical_name)
-            for child_name in child_names:
+            remains_name = hierarchical_name
+            while True:
+                child_name, remains_name = pop_child_name(remains_name)
+                if child_name is None:
+                    break
                 target = target._hierarchical_data[child_name]
-            val = target._hierarchical_data[key]
+            val = target._hierarchical_data[remains_name]
+
+            if not isinstance(val, Namespace):
+                print(type(val), val)
+                print(str(self))
+                print(repr(self))
+                print(self._sequential_data)
+                print(self._hierarchical_data)
+
             assert isinstance(val, Namespace)
             return val
         except KeyError as exc:
@@ -208,3 +241,9 @@ class Namespace(OriginalNS):
             error_msg = ('\'{}\' object has no attribute \'{}\''
                          .format(type(self), hierarchical_name))
             raise AttributeError(error_msg) from None
+
+    def _set_injection(self) -> None:
+        super().__setattr__(Namespace._container_set, None)
+
+    def _unset_injection(self) -> None:
+        super().__delattr__(Namespace._container_set)

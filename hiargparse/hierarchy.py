@@ -1,6 +1,6 @@
 import argparse
 import re
-from typing import Iterable, TypeVar, List, Tuple, Mapping, Any, Dict
+from typing import Iterable, TypeVar, List, Tuple, Mapping, Any, Dict, Optional
 
 
 hi_symbol_before = '--*--'
@@ -37,6 +37,14 @@ def split_child_names_and_key(name: str) -> Tuple[List[str], str]:
         names.append(match.group(1))
         last_end = match.end()
     return (names, name[last_end:])
+
+
+def pop_child_name(name: str) -> Tuple[Optional[str], str]:
+    match = hi_symbol_regexp.search(name)
+    if match is None:
+        return None, name
+    else:
+        return match.group(1), name[match.end():]
 
 
 def is_hierarchical_key(name: str) -> bool:

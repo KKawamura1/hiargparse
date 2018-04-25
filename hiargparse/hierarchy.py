@@ -1,9 +1,13 @@
 import argparse
-from typing import Iterable, TypeVar, List, Dict, Any, Mapping, cast
+import re
+from typing import Iterable, TypeVar, List, Tuple, Mapping, Any, Dict, Optional
 
 
-hi_symbol = '--*--'
-hi_key = hi_symbol + '{}' + '-'
+hi_symbol_before = '--*--'
+hi_symbol_after = '--@--'
+hi_symbols = (hi_symbol_before, hi_symbol_after)
+hi_key = hi_symbol_before + '{}' + hi_symbol_after
+hi_symbol_regexp = re.compile(r'{}(.*?){}'.format(*[re.escape(symb) for symb in hi_symbols]))
 
 
 def get_child_dest_str(keys: Iterable[str]) -> str:
@@ -25,40 +29,50 @@ def get_child_namespace(namespace: SpaceT, key: str) -> SpaceT:
     return return_space
 
 
-def is_attr_name(name: str) -> bool:
-    return name[:len(hi_symbol)] != hi_symbol
+def split_child_names_and_key(name: str) -> Tuple[List[str], str]:
+    names: List[str] = list()
+    last_end = 0
+    for match in hi_symbol_regexp.finditer(name):
+        assert match.start() == last_end
+        names.append(match.group(1))
+        last_end = match.end()
+    return (names, name[last_end:])
 
 
-def namespace_to_dict(namespace: SpaceT) -> Dict[str, Any]:
-    ret_dict: Dict[str, Any] = dict()
-    for attr_name, val in namespace.__dict__.items():
-        if is_attr_name(attr_name):
-            ret_dict[attr_name] = val
-    return ret_dict
-
-
-def dict_to_namespace(
-        contents: Mapping[str, Any],
-        namespace: SpaceT = None
-) -> SpaceT:
-    if namespace is not None:
-        target = namespace
+def pop_child_name(name: str) -> Tuple[Optional[str], str]:
+    match = hi_symbol_regexp.search(name)
+    if match is None:
+        return None, name
     else:
-        target = cast(SpaceT, argparse.Namespace())
-    _dict_to_namespace_recur(contents, target, list())
+        return match.group(1), name[match.end():]
+
+
+def is_hierarchical_key(name: str) -> bool:
+    return len(split_child_names_and_key(name)[0]) > 0
+
+
+def resolve_nested_dict(contents: Mapping[str, Any]) -> Dict[str, Any]:
+    """Convert a nested dictionary to an uniformed dictionary.
+
+    ex.\)
+    input: dict(a=1, b=dict(c=2, d=dict(e=3)))
+    output: dict(dest(a)=1, dest(b,c)=2, dest(b,d,e)=3)
+    """
+
+    target: Dict[str, Any] = dict()
+    _resolve_nested_dict_recur(target, contents, list())
     return target
 
 
-def _dict_to_namespace_recur(
+def _resolve_nested_dict_recur(
+        target: Dict[str, Any],
         contents: Mapping[str, Any],
-        namespace: SpaceT,
         parents: List[str]
 ) -> None:
-    dest = get_child_dest_str(parents)
     for key, val in contents.items():
         if isinstance(val, dict):
-            # create child namespace
-            _dict_to_namespace_recur(val, namespace, parents + [key])
+            _resolve_nested_dict_recur(target, contents=val,
+                                       parents=(parents + [key]))
         else:
-            key_str = dest + key
-            setattr(namespace, key_str, val)
+            dest = get_child_dest_str(parents + [key])
+            target[dest] = val

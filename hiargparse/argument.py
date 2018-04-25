@@ -1,8 +1,12 @@
 import argparse
 import enum
-from typing import Union, Sequence, Collection, Optional
-from typing import Dict, Set, List, Any, NamedTuple
+import warnings
+from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, NamedTuple
+from typing import Dict, Set, List, Any, Type
 from .hierarchy import get_child_dest_str
+from .exceptions import ArgumentError, ConflictWarning, PropagationError
+from .parent_names_to_str import parent_names_to_str
+from .dict_writers import AbstractDictWriter
 
 
 ArgumentAccepter = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
@@ -22,27 +26,24 @@ class _AddArgumentReturn(NamedTuple):
     propagated_from: Optional[str]
 
 
+ValueT = TypeVar('ValueT')
+StrToValueT = Callable[[str], ValueT]
+
+
 class Arg:
     def __init__(
             self,
             name: Union[str, Sequence[str]],
-            default: Any,
+            default: Optional[ValueT] = None,
             *,
             main_name: str = None,
-            action: argparse.Action = None,
-            type: Any = None,
-            help: str = None,
+            type: Union[StrToValueT, Type[StrToValueT]] = None,
             dest: str = None,
             metavar: str = None,
             propagate: bool = None,
             propagate_targets: Collection[str] = None,
             **kwargs: Any
     ) -> None:
-        # type and help seem to conflict with python built-in
-        # rename them not to confuse IDE
-        arg_type = type
-        help_text = help
-
         # names
         names: Collection[str]
         if isinstance(name, str):
@@ -50,45 +51,27 @@ class Arg:
         else:
             names = name
         if not name:
-            raise argparse.ArgumentTypeError('at least one name must be given')
+            raise ArgumentError('At least one name must be given.')
         # main_name
         if main_name is None:
             main_name = names[0]
         # default, type
-        if arg_type is None:
-            if default is not None:
-                arg_type = default.__class__
-            else:
-                raise argparse.ArgumentTypeError('type or default for argument {} must be given'
-                                                 .format(main_name))
+        if type is None and default is not None:
+            type = default.__class__
         # dest
         if dest is None:
             dest = main_name.replace('-', '_')
-        # metavar
-        if metavar is None:
-            metavar = main_name.upper()
         # propagate targets
         if propagate_targets is None:
             propagate_targets = names
-        # help_text
-        default_help_text = '{}. '.format(main_name)
-        if len(names) >= 2:
-            default_help_text += '(a.k.a. {}) '.format(', '.join(names[1:]))
-        # if type is easy-to-understand one, then show it
-        if arg_type in [int, str, float, bool]:
-            default_help_text += 'type: %(type)s. '
-        if default is not None:
-            default_help_text += 'default: %(default)s. '
-        if help_text is None:
-            help_text = default_help_text
-        else:
-            help_text = help_text.replace('%(default-text)s', default_help_text)
+        # metavar
+        if metavar is None:
+            metavar = main_name.upper()
+
         self.main_name = main_name
         self._names = names
         self._default = default
-        self._action = action
-        self._type = arg_type
-        self._help = help_text
+        self._type = type
         self._dest = dest
         self._metavar = metavar
         self._propagate = propagate
@@ -98,11 +81,12 @@ class Arg:
     def _pr_add_argument(
             self,
             argument_target: ArgumentAccepter,
+            writer: AbstractDictWriter,
             parent_names: List[str],
             parent_dists: List[str],
             argument_prefixes: List[str],
             propagate_data: Dict[str, str],
-            prohibited_args: Set[str],
+            prohibited_args: Dict[str, str],
     ) -> _AddArgumentReturn:
         """add arguments to given parser.
 
@@ -120,14 +104,11 @@ class Arg:
 
         # keyword arguments for parser
         parser_kwargs = {key: val for key, val in self._kwargs.items()}
+        parser_kwargs.update(dest=dest, metavar=self._metavar)
+        if self._type is not None:
+            parser_kwargs['type'] = self._type
         if self._default is not None:
             parser_kwargs['default'] = self._default
-        parser_kwargs['type'] = self._type
-        if self._action is not None:
-            parser_kwargs['action'] = self._action
-        parser_kwargs['help'] = self._help
-        parser_kwargs['dest'] = dest
-        parser_kwargs['metavar'] = self._metavar
 
         # propagate check
         propagate_state: PropagateState
@@ -139,26 +120,57 @@ class Arg:
             propagated_from_set = {propagate_data[name] for name in self._names
                                    if name in propagate_data}
             if len(propagated_from_set) != 1:
-                # must be >= 2
+                # if not 1, it must be >= 2
                 assert propagated_from_set
-                # raise conflict error
-                raise argparse.ArgumentTypeError(
+                # propagation error; abort
+                multi_propagated_arg = parent_names_to_str(parent_names + [self.main_name])
+                raise PropagationError(
                     ('argument {} ([{}]) has more than 1 deferent propagation. '
-                     ).format(self.main_name, ', '.join(self._names))
+                     ).format(multi_propagated_arg, ', '.join(self._names))
                 )
             propagated_from = list(propagated_from_set)[0]
-        elif any([name in prohibited_args for name in self._names]):
-            # if at least one name is in prohibited_args, then abort
-            prohibited_name = [name for name in self._names if name in prohibited_args][0]
-            raise argparse.ArgumentTypeError(
-                ('name {} has conflicts; '
-                 'please specify propagate=True '
-                 'if this conflict is your desirable operation. '
-                 ).format(prohibited_name)
-            )
         else:
-            # otherwise add the argument
-            argument_target.add_argument(*names, **parser_kwargs)
+            if any([name in prohibited_args for name in self._names]):
+                # if at least one name is in prohibited_args, then warn it
+                conflict_name, conflict_with = [(name, prohibited_args[name])
+                                                for name in self._names
+                                                if name in prohibited_args][0]
+                conflict_arg = parent_names_to_str(parent_names + [conflict_name])
+                warning_message = (
+                    'argument {} has name conflicts with argument {}; '
+                    'please specify propagate=False if this conflict is '
+                    'your desirable operation. '
+                ).format(conflict_arg, conflict_with)
+                warnings.warn(ConflictWarning(warning_message))
+            # add the argument
+            action: argparse.Action
+            # some actions do not take some arguments
+            try:
+                # the stub file does not know, but I know
+                # that add_argument really returns the action
+                action = argument_target.add_argument(*names, **parser_kwargs)  # type: ignore
+            except TypeError:
+                del parser_kwargs['metavar']
+                action = argument_target.add_argument(*names, **parser_kwargs)  # type: ignore
+
+            # replacing help text
+            default_help_text = '{}. '.format(self.main_name)
+            if len(self._names) >= 2:
+                default_help_text += '(a.k.a. {}) '.format(', '.join(self._names[1:]))
+            # if type is easy-to-understand one, then show it
+            if action.type in [int, str, float, bool]:
+                default_help_text += 'type: %(type)s. '
+            if action.default is not None:
+                default_help_text += 'default: %(default)s. '
+            if action.nargs == 0 and action.const is not None:
+                default_help_text += 'Use this argument to set {}. '.format(action.const)
+            if action.help is None:
+                action.help = default_help_text
+            else:
+                action.help = action.help.replace('%(default-text)s', default_help_text)
+
+            # write about the argument
+            writer.add_argument(action, dest=self._names[0], comment_outs=True)
 
             # return propagate states
             if self._propagate is None:
@@ -175,6 +187,5 @@ class Arg:
 
     def _pr_to_propagatable(self) -> None:
         if self._propagate is not None and not self._propagate:
-            raise argparse.ArgumentTypeError('do not specify propagate=False '
-                                             'to propagate_arg. ')
+            raise ArgumentError('do not specify propagate=False to propagate_arg. ')
         self._propagate = True

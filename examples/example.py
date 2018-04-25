@@ -34,7 +34,7 @@ class Son:
 
     def __init__(self, params: Namespace) -> None:
         print(params.hoge, params.huga, params.piyo)
-        gson = GrandSon(params._get_child('GS'))
+        gson = GrandSon(params.GS)
 
 
 if __name__ == '__main__':
@@ -47,10 +47,10 @@ if __name__ == '__main__':
     # quite usual argparse way except *new code* line
     parser = ArgumentParser()
     parser.add_argument('-V', '--version', action='version', version='v1.0')
-    args_provider.add_arguments(parser)  # *new code*
+    parser.add_arguments_from_provider(args_provider)  # *new code*
     params = parser.parse_args()
 
     # now you have ALL parameters including child and grandchild arguments
     # please try to execute with --help
     print(params.foo)
-    son = Son(params._get_child('Son'))
+    son = Son(params.Son)

@@ -1,6 +1,6 @@
-from argparse import ArgumentParser, Namespace  # use traditional argparse instead hiargparse
+from argparse import ArgumentParser  # use traditional argparse instead hiargparse
 from hiargparse import ArgsProvider, Arg, ChildProvider  # need to define child arguments
-from hiargparse import Namespace as HiNamespace  # wrapper for argparse.Namespace
+from hiargparse import Namespace  # wrapper for argparse.Namespace
 
 # just same as example.py
 from example import Son
@@ -17,17 +17,22 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-V', '--version', action='version', version='v1.0')
 
-    # same as example.py
-    args_provider.add_arguments(parser)
+    # here we have to write some weird code
+    # cast argparse.Namespace to hiargparse.Namespace
+    # invoke args_provider's method with the parser
+    # instead of parser's method with the args_provider
+    args_provider.add_arguments_to_parser(parser)
+
+    # parse_args with original parser
+    # in a tipical case, this line hides behind other libraries' implementation
     params = parser.parse_args()
 
-    # here we have to write some weird code
+    # convert argparse.Namespace to hiargparse.Namespace
+    params = Namespace(params)
     # do some deferred actions relating to arg propagation
-    args_provider.apply_deferring_actions(params)
-    # cast argparse.Namespace to hiargparse.Namespace
-    params = HiNamespace(params)
+    args_provider.apply_propagations(params)
 
     # now you have ALL parameters including child and grandchild arguments
     # please try to execute with --help
     print(params.foo)
-    son = Son(params._get_child('Son'))
+    son = Son(params.Son)

@@ -1,6 +1,6 @@
 from argparse import Namespace as OriginalNS
 from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, Generator, ClassVar, ItemsView
-from .hierarchy import pop_child_name, get_child_dest_str
+from .hierarchy import parents_and_key_to_long_key, pop_highest_parent_name, iter_parents
 
 
 SpaceT = TypeVar('SpaceT', bound=OriginalNS)
@@ -132,7 +132,7 @@ class Namespace(OriginalNS):
                 new_parents = parents + [key]
                 self._update_from_dict_recur(val, converts_dict, new_parents)
             else:
-                new_key = get_child_dest_str(parents) + key
+                new_key = parents_and_key_to_long_key(parents, key)
                 self[new_key] = val
 
     def _replaced(self: SpaceT, **kwargs: Any) -> SpaceT:
@@ -193,7 +193,7 @@ class Namespace(OriginalNS):
         self._sequential_data[hierarchical_name] = val
 
         # set hierarchical data
-        child_name, remain_key = pop_child_name(hierarchical_name)
+        child_name, remain_key = pop_highest_parent_name(hierarchical_name)
         if child_name is None:
             self._hierarchical_data[remain_key] = val
         else:
@@ -219,13 +219,9 @@ class Namespace(OriginalNS):
         # search in hierarchical data
         try:
             target = self
-            remains_name = hierarchical_name
-            while True:
-                child_name, remains_name = pop_child_name(remains_name)
-                if child_name is None:
-                    break
-                target = target._hierarchical_data[child_name]
-            val = target._hierarchical_data[remains_name]
+            for parent, remains in iter_parents(hierarchical_name):
+                target = target._hierarchical_data[parent]
+            val = target._hierarchical_data[remains]
             assert isinstance(val, Namespace)
             return val
         except KeyError as exc:

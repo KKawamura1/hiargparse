@@ -6,7 +6,7 @@ from .arg_parse import ArgumentParser
 from .namespace import Namespace
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
-from .parent_names_to_str import parent_names_to_str
+from .hierarchy import format_parent_names, format_parent_names_and_key
 from .exceptions import ConflictError, ArgumentError
 from .file_protocols import dict_writers, dict_readers, FileProtocol
 
@@ -120,7 +120,7 @@ class ArgsProvider:
     ) -> None:
         new_propagate_data: Dict[str, str] = dict()
         new_prohibited_args: Dict[str, str] = dict()
-        group_name = parent_names_to_str(parent_names)
+        group_name = format_parent_names(parent_names)
         argument_group = parser.add_argument_group(group_name)
         for arg in self._args:
             if arg.main_name in no_provides:
@@ -140,7 +140,7 @@ class ArgsProvider:
             elif state is PropagateState.Prohibit:
                 # ready for prohibit
                 for target in returns.targets:
-                    new_prohibited_args[target] = parent_names_to_str(parent_names + [target])
+                    new_prohibited_args[target] = format_parent_names_and_key(parent_names, target)
             elif state is PropagateState.Propagated:
                 # set to propagate the value
                 assert returns.propagated_from is not None

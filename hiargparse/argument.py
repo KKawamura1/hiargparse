@@ -3,9 +3,8 @@ import enum
 import warnings
 from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, NamedTuple
 from typing import Dict, Set, List, Any, Type
-from .hierarchy import get_child_dest_str
+from .hierarchy import parents_and_key_to_long_key, format_parent_names_and_key
 from .exceptions import ArgumentError, ConflictWarning, PropagationError
-from .parent_names_to_str import parent_names_to_str
 from .dict_writers import AbstractDictWriter
 
 
@@ -103,7 +102,7 @@ class Arg:
             names.append('--{}'.format('-'.join(argument_flagments)))
 
         # dest
-        dest = get_child_dest_str(parent_dists) + self._dest
+        dest = parents_and_key_to_long_key(parent_dists, self._dest)
 
         # keyword arguments for parser
         parser_kwargs = {key: val for key, val in self._kwargs.items()}
@@ -126,7 +125,7 @@ class Arg:
                 # if not 1, it must be >= 2
                 assert propagated_from_set
                 # propagation error; abort
-                multi_propagated_arg = parent_names_to_str(parent_names + [self.main_name])
+                multi_propagated_arg = format_parent_names_and_key(parent_names, self.main_name)
                 raise PropagationError(
                     ('argument {} ([{}]) has more than 1 deferent propagation. '
                      ).format(multi_propagated_arg, ', '.join(self._names))
@@ -138,7 +137,7 @@ class Arg:
                 conflict_name, conflict_with = [(name, prohibited_args[name])
                                                 for name in self._names
                                                 if name in prohibited_args][0]
-                conflict_arg = parent_names_to_str(parent_names + [conflict_name])
+                conflict_arg = format_parent_names_and_key(parent_names, conflict_name)
                 warning_message = (
                     'argument {} has name conflicts with argument {}; '
                     'please specify propagate=False if this conflict is '

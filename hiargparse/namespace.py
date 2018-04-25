@@ -1,15 +1,9 @@
 from argparse import Namespace as OriginalNS
-from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, NamedTuple, Generic
+from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, NamedTuple, Generator
 from .hierarchy import split_child_names_and_key
-from .origin_type import OriginType
 
 
 SpaceT = TypeVar('SpaceT', bound=OriginalNS)
-
-
-class Attr(NamedTuple):
-    value: Any
-    origin: OriginType
 
 
 class Namespace(OriginalNS):
@@ -23,7 +17,8 @@ class Namespace(OriginalNS):
 
     def __init__(self, copy_from: Union[SpaceT, Mapping[str, Any]] = None) -> None:
         super().__init__()
-        self._data: Dict[str, Attr] = dict()
+        self._sequential_data: Dict[str, Any] = dict()
+        self._hierarchical_data: Dict[str, Any] = dict()
         if copy_from is not None:
             self._update(copy_from)
 
@@ -36,35 +31,40 @@ class Namespace(OriginalNS):
         return True
 
     def __setattr__(self, key: str, value: Any) -> None:
-        self._setattr_with_origin(key, value, origin=OriginType.Unknown)
+        self._setattr_with_hierarchical_name(key, value)
 
     def __getattr__(self, key: str) -> Any:
-        self._getattr_with_origin(key).value
+        return self._getattr_with_hierarchical_name(key)
 
     def __delattr__(self, key: str) -> None:
-        try:
-            del self._data[key]
-        except KeyError:
-            error_msg = '\'{}\' object has no attribute \'{}\''.format(type(self), key)
-            raise AttributeError(error_msg) from None
-
-    # normalization from inline hierarchy to nested namespace
-    def _normalized(self: SpaceT, converts_dict: bool = True) -> SpaceT:
-        target = type(self)()
-        for long_key, val in self.__dict__.items():
-            target._setattr_with_hierarchical_name(long_key, val)
-        return target
+        raise TypeError('{} object does not support __delattr__ method. '
+                        .format(type(self)))
 
     # dict compatibility
-
-    def __getitem__(self, key: str) -> Any:
-        return getattr(self, key)
 
     def __setitem__(self, key: str, value: Any) -> None:
         setattr(self, key, value)
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
     def __delitem__(self, key: str) -> None:
         delattr(self, key)
+
+    def __contains__(self, key: str) -> bool:
+        return hasattr(self, key)
+
+    def __len__(self) -> int:
+        return len(self._sequential_data)
+
+    def __iter__(self) -> Generator[Any, None, None]:
+        """implemented for compatibility with collections.abc.Mapping.
+
+        Returns only values (not key).
+        """
+        for key, value in self._sequential_data.items():
+            yield value
+        raise StopIteration()
 
     # useful conversion methods
     # referring to collections.namedtuple
@@ -93,7 +93,11 @@ class Namespace(OriginalNS):
             contents: OriginalNS,
             converts_dict: bool = False
     ) -> None:
-        self._update_from_dict(contents.__dict__, converts_dict)
+        if isinstance(contents, Namespace):
+            copy_from = contents._sequential_data
+        else:
+            copy_from = contents._get_kwargs()
+        self._update_from_dict(copy_from, converts_dict)
 
     def _update_from_dict(
             self,
@@ -101,11 +105,12 @@ class Namespace(OriginalNS):
             converts_dict: bool = True
     ) -> None:
         for key, val in contents.items():
-            target: Any = val
-            if isinstance(val, dict):
-                if converts_dict:
-                    target = type(self)()
-                    target._update(val, converts_dict)
+            target: Any
+            if isinstance(val, dict) and converts_dict:
+                target = type(self)()
+                target._update(val, converts_dict)
+            else:
+                target = val
             self[key] = target
 
     def _replaced(self: SpaceT, **kwargs: Any) -> SpaceT:
@@ -119,9 +124,8 @@ class Namespace(OriginalNS):
         return namespace._update(contents)
 
     def _asdict(self) -> Dict[str, Any]:
-        normalized = self._normalize()
         ret_dict: Dict[str, Any] = dict()
-        for key, val in normalized.__dict__.items():
+        for key, val in self._hierarchical_data.items():
             if isinstance(val, Namespace):
                 val = val._asdict()
             ret_dict[key] = val
@@ -149,30 +153,54 @@ class Namespace(OriginalNS):
 
     # protected methods
 
-    def _getattr_with_hierarchical_name(self, hierarchical_name: str) -> Any:
-        target = self
-        child_names, key = split_child_names_and_key(hierarchical_name)
-        for child_name in child_names:
-            target = target[child_name]
-        return target[key]
-
     def _setattr_with_hierarchical_name(self, hierarchical_name: str, val: Any) -> None:
+        """set attribute
+
+        Key may be a long hierarchical name
+        like <token>Foo</token><token>Bar</token>buz .
+        We set the value as both the sequential (long-token-including-key: val)
+        and hierarchical (key1: key2: key3: val) style.
+        """
+        assert self.__keycheck(hierarchical_name)
+        if isinstance(val, OriginalNS):
+            # Namespace cannot be attatched directly
+            # because it may break the hierarchical structure.
+            raise TypeError('value {} must not be Namespace, yours is {}'
+                            .format(val, type(val)))
+        self._sequential_data[hierarchical_name] = val
         target = self
         child_names, key = split_child_names_and_key(hierarchical_name)
         for child_name in child_names:
             if child_name not in target:
-                target[child_name] = type(self)()
-            target = target[child_name]
-        target[key] = val
+                target._hierarchical_data[child_name] = type(self)()  # initialize with Namespace
+            target = target._hierarchical_data[child_name]
+        target._hierarchical_data[key] = val
 
-    def _setattr_with_origin(self, key: str, value: Any, origin: OriginType) -> None:
-        assert self.__keycheck(key)
-        self._data[key] = Attr(value=value, origin=origin)
+    def _getattr_with_hierarchical_name(self, hierarchical_name: str) -> Any:
+        """get attribute
 
-    def _getattr_with_origin(self, key: str) -> Attr:
+        Key may be a long hierarchical name
+        like <token>Foo</token><token>Bar</token>buz .
+        If the key in sequential data, it must not be a Namespace,
+        so return seq[key].
+        Otherwise, it may be in hierarchical data, so we search it.
+        If there is no match, raise AttributeError.
+        """
+        # search in sequential data
+        if hierarchical_name in self._sequential_data:
+            val = self._sequential_data[hierarchical_name]
+            return val
+        # search in hierarchical data
         try:
-            value = self._data[key]
-        except KeyError:
-            error_msg = '\'{}\' object has no attribute \'{}\''.format(type(self), key)
+            target = self
+            child_names, key = split_child_names_and_key(hierarchical_name)
+            for child_name in child_names:
+                target = target._hierarchical_data[child_name]
+            val = target._hierarchical_data[key]
+            assert isinstance(val, Namespace)
+            return val
+        except KeyError as exc:
+            # no such attribute; abort
+            error_msg = ('\'{}\' object has no attribute \'{}\''
+                         .format(type(self), hierarchical_name))
             raise AttributeError(error_msg) from None
-        return value

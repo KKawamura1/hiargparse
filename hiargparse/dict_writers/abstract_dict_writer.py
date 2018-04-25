@@ -10,7 +10,7 @@ class AbstractDictWriter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_metavar_from_action(self, action: Action) -> str:
+    def get_metavar_from_action(self, action: Action) -> List[str]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -66,9 +66,9 @@ class AbstractDictWriter(ABC):
         nargs = action.nargs
         values: Union[str, List[str]]
         if nargs is None or nargs == 1:
-            values = metavar
+            values = metavar[0]
         elif nargs == 0:
             values = []
         else:
-            values = [metavar]
+            values = metavar
         self.add_value(name=dest, values=values, comment=help_text, comment_outs=comment_outs)

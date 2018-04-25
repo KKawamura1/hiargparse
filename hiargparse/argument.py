@@ -39,7 +39,7 @@ class Arg:
             main_name: str = None,
             type: Union[StrToValueT, Type[StrToValueT]] = None,
             dest: str = None,
-            metavar: str = None,
+            metavar: Union[str, Sequence[str]] = None,
             propagate: bool = None,
             propagate_targets: Collection[str] = None,
             **kwargs: Any
@@ -67,6 +67,9 @@ class Arg:
         # metavar
         if metavar is None:
             metavar = main_name.upper()
+        if not isinstance(metavar, str):
+            # sequence to tuple
+            metavar = tuple(metavar)
 
         self.main_name = main_name
         self._names = names

@@ -1,6 +1,6 @@
 import argparse
 from argparse import ArgumentParser as OriginalAP
-from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple, Callable, Any
+from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple, Callable, Any, Tuple
 from pathlib import Path
 from .arg_parse import ArgumentParser
 from .namespace import Namespace
@@ -63,14 +63,14 @@ class ArgsProvider:
         expand_help_text_from_action: Callable[[argparse.Action], str]
         expand_help_text_from_action = help_instance._expand_help  # type: ignore
 
-        def get_metavar_from_action(action: argparse.Action) -> str:
+        def get_metavar_from_action(action: argparse.Action) -> List[str]:
             assert action.option_strings
             # access to protected attributes
             tmp: Any = help_instance._get_default_metavar_for_optional(action)  # type: ignore
             default_metavar: str = tmp
             tmp: Any = help_instance._metavar_formatter(action, default_metavar)  # type: ignore
-            metavar: str = tmp(1)[0]
-            return metavar
+            metavar: Tuple[str, ...] = tmp(1)
+            return list(metavar)
 
         writer: dict_writers.AbstractDictWriter
         if file_type is ConfigureFileType.toml:
@@ -90,7 +90,7 @@ class ArgsProvider:
     ) -> Namespace:
         reader: dict_readers.AbstractDictReader
         if file_type is ConfigureFileType.toml:
-            raise
+            reader = dict_readers.TOMLReader()
         elif file_type is ConfigureFileType.yaml:
             reader = dict_readers.YAMLReader()
         contents = reader.to_normalized_dict(document)

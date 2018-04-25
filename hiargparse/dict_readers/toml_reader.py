@@ -4,22 +4,22 @@ import importlib
 from .normalize_dict import normalize_dict
 from .added_double_hyphen import added_double_hyphen
 
-# deferred erroring for yaml package
-# (to work correctly without yaml if you don't use yaml at all)
-if importlib.util.find_spec(name='yaml') is None:
-    _yaml_exist = False
+# deferred erroring for toml package
+# (to work correctly without toml if you don't use toml at all)
+if importlib.util.find_spec(name='toml') is None:
+    _toml_exist = False
 else:
-    import yaml
-    _yaml_exist = True
+    import toml
+    _toml_exist = True
 
 
-class YAMLReader(AbstractDictReader):
+class TOMLReader(AbstractDictReader):
     def __init__(self) -> None:
-        if not _yaml_exist:
+        if not _toml_exist:
             # abort
             try:
                 # force raise ImportError
-                import yaml  # noqa: F401,F811
+                import toml  # noqa: F401,F811
             except ImportError as exc:
                 additional_message = (': this error happens because {} want to use it.'
                                       .format(type(self).__name__))
@@ -32,4 +32,4 @@ class YAMLReader(AbstractDictReader):
         return added_double_hyphen(target)
 
     def _to_nested_dict(self, input_documents: str) -> Dict[str, Any]:
-        return yaml.safe_load(input_documents)
+        return toml.loads(input_documents)

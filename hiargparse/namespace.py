@@ -22,6 +22,10 @@ class Namespace(OriginalNS):
         if copy_from is not None:
             self._update(copy_from)
 
+    # override superclass attribute
+    def _get_kwargs(self) -> Dict[str, Any]:
+        return self._hierarchical_data
+
     # access to attributes
 
     def __keycheck(self, key: Any) -> bool:
@@ -135,7 +139,7 @@ class Namespace(OriginalNS):
         type_name = type(self).__name__
         arg_strings: List[str] = list()
         namespace_children: Dict[str, 'Namespace'] = dict()
-        for key, val in self.__dict__.items():
+        for key, val in self._get_kwargs():
             if key.isidentifier():
                 key_str = key
             else:

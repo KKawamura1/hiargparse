@@ -23,7 +23,7 @@ if __name__ == '__main__':
             Arg('read-from', type=Path,
                 help='%(default-text)s Read from the given configure file. '),
         ],
-        child_providers=[ChildProvider(Son), ChildProvider(Car)]
+        child_providers=[ChildProvider(Son)]
     )
 
     # parse arguments as usual

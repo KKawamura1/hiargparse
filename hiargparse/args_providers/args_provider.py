@@ -1,14 +1,12 @@
 import argparse
 from argparse import ArgumentParser as OriginalAP
 from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple, Callable, Any, Tuple
-from pathlib import Path
-from ..arg_parse import ArgumentParser
-from ..hierarchy import format_parent_names, format_parent_names_and_key
-from ..file_protocols import dict_writers, dict_readers, FileProtocol
-from ..namespace import Namespace
+from hiargparse import ArgumentParser, Namespace
+from hiargparse.hierarchy import format_parent_names, format_parent_names_and_key
+from hiargparse.file_protocols import dict_writers, dict_readers, FileProtocol
+from .exceptions import ConflictError, ArgumentError
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
-from .exceptions import ConflictError, ArgumentError
 
 
 class _PropagateAttribute(NamedTuple):

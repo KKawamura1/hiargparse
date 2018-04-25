@@ -1,12 +1,10 @@
 from typing import Any, Sequence, Tuple, List, Callable, cast, TYPE_CHECKING
 from argparse import ArgumentParser as OriginalAP
 from argparse import Namespace as OriginalNS
-import argparse
-from pathlib import Path
-from .namespace import Namespace
+from hiargparse import Namespace
 
 if TYPE_CHECKING:
-    from .args_provider import ArgsProvider
+    from hiargparse.args_providers import ArgsProvider
 
 
 class ArgumentParser(OriginalAP):

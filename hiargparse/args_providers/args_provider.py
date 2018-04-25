@@ -55,20 +55,6 @@ class ArgsProvider:
             self,
             file_protocol: FileProtocol
     ) -> str:
-        # access to protected attributes
-        help_instance = argparse.HelpFormatter(prog='')
-        expand_help_text_from_action: Callable[[argparse.Action], str]
-        expand_help_text_from_action = help_instance._expand_help  # type: ignore
-
-        def get_metavar_from_action(action: argparse.Action) -> List[str]:
-            assert action.option_strings
-            # access to protected attributes
-            tmp: Any = help_instance._get_default_metavar_for_optional(action)  # type: ignore
-            default_metavar: str = tmp
-            tmp: Any = help_instance._metavar_formatter(action, default_metavar)  # type: ignore
-            metavar: Tuple[str, ...] = tmp(1)
-            return list(metavar)
-
         writer: dict_writers.AbstractDictWriter = file_protocol.get_writer()
         self._add_arguments_to_writer(writer)
         return writer.write_out()

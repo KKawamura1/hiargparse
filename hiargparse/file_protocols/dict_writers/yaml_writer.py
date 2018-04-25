@@ -1,17 +1,12 @@
 from .abstract_dict_writer import AbstractDictWriter
-from typing import Callable, Union, Sequence, List
-from argparse import Action
+from typing import Union, Sequence
 
 
 class YAMLWriter(AbstractDictWriter):
     def __init__(
             self,
-            expand_help_text_from_action: Callable[[Action], str],
-            get_metavar_from_action: Callable[[Action], List[str]],
             indent_size: int = 2
     ) -> None:
-        self._expand_help_text_from_action = expand_help_text_from_action
-        self._get_metavar_from_action = get_metavar_from_action
         self._indent_size = indent_size
         self._texts = ''
         self._indent_level = 0
@@ -23,12 +18,6 @@ class YAMLWriter(AbstractDictWriter):
 
     def _end_root_section(self) -> None:
         pass
-
-    def expand_help_text_from_action(self, action: Action) -> str:
-        return self._expand_help_text_from_action(action)
-
-    def get_metavar_from_action(self, action: Action) -> List[str]:
-        return self._get_metavar_from_action(action)
 
     def begin_section(self, name: str) -> None:
         self._add_line('{}:'.format(name))

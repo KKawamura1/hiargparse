@@ -2,7 +2,7 @@ from argparse import ArgumentParser as OriginalAP
 from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple
 from hiargparse import ArgumentParser, Namespace
 from hiargparse.hierarchy import format_parent_names, format_parent_names_and_key
-from hiargparse.file_protocols import dict_writers, dict_readers, FileProtocol
+from hiargparse.file_protocols import dict_writers, dict_readers
 from hiargparse.miscs import if_none_then
 from .exceptions import ConflictError, ArgumentError
 from .child_provider import ChildProvider
@@ -73,22 +73,20 @@ class ArgsProvider:
 
     def write_out_configure_arguments(
             self,
-            file_protocol: FileProtocol
+            writer: dict_writers.AbstractDictWriter
     ) -> str:
         """Return a string that represents its all arguments as given style."""
-        writer: dict_writers.AbstractDictWriter = file_protocol.get_writer()
         self._add_arguments_to_writer(writer)
         return writer.write_out()
 
     def read_configure_arguments(
             self,
             document: str,
-            file_protocol: FileProtocol,
+            reader: dict_readers.AbstractDictReader,
             parser: OriginalAP = None
     ) -> Namespace:
         """Read the given document as given style and return the parameters."""
         parser = if_none_then(parser, ArgumentParser())
-        reader: dict_readers.AbstractDictReader = file_protocol.get_reader()
         contents = reader.to_normalized_dict(document)
         args: List[str] = []
         for key, val in contents.items():

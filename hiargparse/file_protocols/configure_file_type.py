@@ -1,6 +1,5 @@
 import enum
 from . import dict_readers, dict_writers
-from typing import Type
 
 
 class ConfigureFileType(enum.Enum):

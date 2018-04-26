@@ -38,7 +38,7 @@ if __name__ == '__main__':
         path_w: Path = params.write_to
         # write configure arguments to the given file as the given type
         with path_w.open('w') as f:
-            f.write(args_provider.write_out_configure_arguments(file_type))
+            f.write(args_provider.write_out_configure_arguments(file_type.get_writer()))
         # when you want to write out a configure file,
         # usually you want to stop this program, fill in your brand-new configure file,
         # and then restart it, so I'll exit
@@ -47,7 +47,7 @@ if __name__ == '__main__':
         path_r: Path = params.read_from
         # read configure arguments from the given file
         with path_r.open('r') as f:
-            read_params = args_provider.read_configure_arguments(f.read(), file_type)
+            read_params = args_provider.read_configure_arguments(f.read(), file_type.get_reader())
 
         # Usually you want to overwrite the parameters from the file
         # with the parameters from program arguments.

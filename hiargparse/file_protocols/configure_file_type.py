@@ -3,6 +3,8 @@ from . import dict_readers, dict_writers
 
 
 class ConfigureFileType(enum.Enum):
+    """Write/Read supporting types"""
+
     toml = enum.auto()
     yaml = enum.auto()
 

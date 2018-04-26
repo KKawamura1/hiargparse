@@ -42,6 +42,9 @@ class Arg:
                    is treated as a totally different Arg.
         propagate_targets: names that used in checking whether the target is
                    the same (occur propagation) or not.
+
+    methods started with _pr_ is used in other classes in this module,
+    but invisible from outside of this module.
     """
 
     def __init__(

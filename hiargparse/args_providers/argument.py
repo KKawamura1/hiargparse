@@ -5,10 +5,11 @@ from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, Nam
 from typing import Dict, List, Any, Type
 from hiargparse.hierarchy import parents_and_key_to_long_key, format_parent_names_and_key
 from hiargparse.file_protocols.dict_writers import AbstractDictWriter
+from hiargparse.dirty_accesses.DirtyAccessToArgparse import ArgumentGroup
 from .exceptions import ArgumentError, ConflictWarning, PropagationError
 
 
-ArgumentAccepter = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+ArgumentAccepter = Union[argparse.ArgumentParser, ArgumentGroup]
 
 
 class PropagateState(enum.Enum):
@@ -30,6 +31,19 @@ StrToValueT = Callable[[str], ValueT]
 
 
 class Arg:
+    """An argument to be registered to ArgsProvider.
+
+    Take all arguments that argparse.add_argument() can receive.
+    Args:
+        main_name: used in a default value for several arguments and its signature.
+        propagate: If True, then propagate its value to all child Args
+                   that have the same name.
+                   If False, no propagation is occurred and the same-name Arg
+                   is treated as a totally different Arg.
+        propagate_targets: names that used in checking whether the target is
+                   the same (occur propagation) or not.
+    """
+
     def __init__(
             self,
             name: Union[str, Sequence[str]],
@@ -104,7 +118,7 @@ class Arg:
         """
 
         # argument names
-        names = list()
+        names = []
         for name in self._names:
             argument_flagments = list(argument_prefixes) + [name]
             names.append('--{}'.format('-'.join(argument_flagments)))
@@ -204,6 +218,7 @@ class Arg:
                                   dest=dest, propagated_from=propagated_from)
 
     def _pr_to_propagatable(self) -> None:
+        """Turn on its propagate property"""
         if self._propagate is not None and not self._propagate:
             raise ArgumentError('do not specify propagate=False to propagate_arg. ')
         self._propagate = True

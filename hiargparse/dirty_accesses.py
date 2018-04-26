@@ -5,6 +5,8 @@ from typing import List, Tuple
 class DirtyAccessToArgparse:
     """Treats all non-public accesses to argparse."""
 
+    ArgumentGroup = argparse._ArgumentGroup
+
     help_instance = argparse.HelpFormatter(prog='')
 
     @staticmethod

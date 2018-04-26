@@ -14,7 +14,7 @@ if __name__ == '__main__':
     # (of cource this is not necessary)
     parser = ArgumentParser()
     Son.get_args_provider().add_arguments_to_parser(parser)
-    print(parser.parse_args(args=[]))  # calling with args=[] passes no arguments to the parser
+    print(parser.get_default_parameters())  # you can call parse_args(args=[]) instead of this line
 
     # then here we go
     son_params = Namespace(
@@ -26,8 +26,9 @@ if __name__ == '__main__':
         )
     )
     son = Son(son_params)
+    son.print_()
 
-    # tired to write propagate args (like huga='hey')
+    # tired to write propagate args (like huga='hey') many times
     # or values you want to leave default (like hoge=42) ?
     # tell your args_provider to propagate args :)
     args_provider = Son.get_args_provider()
@@ -44,3 +45,4 @@ if __name__ == '__main__':
     )
     args_provider.apply_propagations(son_params)  # apply argument propagations
     son = Son(son_params)
+    son.print_()

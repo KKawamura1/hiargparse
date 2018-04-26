@@ -1,7 +1,7 @@
 from typing import Any, Sequence, Tuple, List, Callable, cast, TYPE_CHECKING
 from argparse import ArgumentParser as OriginalAP
 from argparse import Namespace as OriginalNS
-from hiargparse import Namespace
+from .namespace import Namespace
 
 if TYPE_CHECKING:
     from hiargparse.args_providers import ArgsProvider

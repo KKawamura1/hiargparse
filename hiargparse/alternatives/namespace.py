@@ -1,6 +1,6 @@
 from argparse import Namespace as OriginalNS
 from typing import Any, Dict, TypeVar, Mapping, Union, List, Generator, ClassVar, ItemsView
-from .hierarchy import parents_and_key_to_long_key, pop_highest_parent_name, iter_parents
+from hiargparse.hierarchy import parents_and_key_to_long_key, pop_highest_parent_name, iter_parents
 
 
 SpaceT = TypeVar('SpaceT', bound=OriginalNS)
@@ -22,7 +22,7 @@ class Namespace(OriginalNS):
     def __init__(self, copy_from: Union[SpaceT, Mapping[str, Any]] = None) -> None:
         self._sequential_data: Dict[str, Any] = dict()
         self._hierarchical_data: Dict[str, Any] = dict()
-        self._set_injection()
+        self.__set_injection()
         super().__init__()
         if copy_from is not None:
             self._update(copy_from)
@@ -48,10 +48,10 @@ class Namespace(OriginalNS):
             super().__setattr__(key, value)
             return
         # otherwise method injection occurred
-        self._setattr_with_hierarchical_name(key, value)
+        self.__setattr_with_hierarchical_name(key, value)
 
     def __getattr__(self, key: str) -> Any:
-        return self._getattr_with_hierarchical_name(key)
+        return self.__getattr_with_hierarchical_name(key)
 
     def __delattr__(self, key: str) -> None:
         raise TypeError('{} object does not support __delattr__ method. '
@@ -96,9 +96,9 @@ class Namespace(OriginalNS):
     ) -> None:
         """Overwrite self with given data."""
         if isinstance(contents, OriginalNS):
-            self._update_from_namespace(contents)
+            self.__update_from_namespace(contents)
         else:
-            self._update_from_dict(contents)
+            self.__update_from_dict(contents)
 
     def _replaced(self: SpaceT, **kwargs: Any) -> SpaceT:
         """Return a copied self with its data replaced with given args."""
@@ -137,7 +137,7 @@ class Namespace(OriginalNS):
 
     # protected methods
 
-    def _setattr_with_hierarchical_name(self, hierarchical_name: str, val: Any) -> None:
+    def __setattr_with_hierarchical_name(self, hierarchical_name: str, val: Any) -> None:
         """Set attribute.
 
         Key may be a long hierarchical name
@@ -164,7 +164,7 @@ class Namespace(OriginalNS):
             assert isinstance(self[child_name], Namespace)
             self[child_name][remain_key] = val  # recursively registering
 
-    def _getattr_with_hierarchical_name(self, hierarchical_name: str) -> Any:
+    def __getattr_with_hierarchical_name(self, hierarchical_name: str) -> Any:
         """Get attribute.
 
         Key may be a long hierarchical name
@@ -174,17 +174,22 @@ class Namespace(OriginalNS):
         Otherwise, it may be in hierarchical data, so we search it.
         If there is no match, raise AttributeError.
         """
+        # escape infinit recursion
+        sequential_data = object.__getattribute__(self, '_sequential_data')
+
         # search in sequential data
-        if hierarchical_name in self._sequential_data:
-            val = self._sequential_data[hierarchical_name]
+        if hierarchical_name in sequential_data:
+            val = sequential_data[hierarchical_name]
             return val
         # search in hierarchical data
         try:
             target = self
             remains = hierarchical_name
             for parent, remains in iter_parents(hierarchical_name):
-                target = target._hierarchical_data[parent]
-            val = target._hierarchical_data[remains]
+                hierarchical_data = object.__getattribute__(target, '_hierarchical_data')
+                target = hierarchical_data[parent]
+            hierarchical_data = object.__getattribute__(target, '_hierarchical_data')
+            val = hierarchical_data[remains]
             assert isinstance(val, Namespace)
             return val
         except KeyError as exc:
@@ -193,13 +198,16 @@ class Namespace(OriginalNS):
                          .format(type(self), hierarchical_name))
             raise AttributeError(error_msg) from None
 
-    def _set_injection(self) -> None:
+    def __set_injection(self) -> None:
         super().__setattr__(Namespace._setattr_injection_key, None)
 
-    def _unset_injection(self) -> None:
-        super().__delattr__(Namespace._setattr_injection_key)
+    def __unset_injection(self) -> None:
+        try:
+            super().__delattr__(Namespace._setattr_injection_key)
+        except AttributeError:
+            pass
 
-    def _update_from_namespace(
+    def __update_from_namespace(
             self,
             contents: OriginalNS
     ) -> None:
@@ -207,16 +215,16 @@ class Namespace(OriginalNS):
             copy_from = contents._sequential_data
         else:
             copy_from = contents.__dict__
-        self._update_from_dict(copy_from, converts_dict=False)
+        self.__update_from_dict(copy_from, converts_dict=False)
 
-    def _update_from_dict(
+    def __update_from_dict(
             self,
             contents: Mapping[str, Any],
             converts_dict: bool = True
     ) -> None:
-        self._update_from_dict_recur(contents, converts_dict, parents=[])
+        self.__update_from_dict_recur(contents, converts_dict, parents=[])
 
-    def _update_from_dict_recur(
+    def __update_from_dict_recur(
             self,
             contents: Mapping[str, Any],
             converts_dict: bool,

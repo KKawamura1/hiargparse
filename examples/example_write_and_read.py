@@ -61,4 +61,4 @@ if __name__ == '__main__':
     print(params)
     # try to execute with --write-to / --read-from FILE_PATH
     son = Son(params.Son)
-    Son.print_()
+    son.print_()

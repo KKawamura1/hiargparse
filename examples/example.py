@@ -40,7 +40,7 @@ class Son:
         self._gson = GrandSon(params.GS)
 
     def print_(self) -> None:
-        print(params.hoge, params.huga, params.piyo)
+        print(self._params.hoge, self._params.huga, self._params.piyo)
         self._gson.print_()
 
 

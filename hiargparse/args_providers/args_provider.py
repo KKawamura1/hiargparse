@@ -105,6 +105,18 @@ class ArgsProvider:
         name_space = parser.parse_args(args)
         return Namespace(name_space)
 
+    def apply_propagations(self, namespace: Namespace) -> None:
+        """Applying arguments propagation.
+
+        Be sure to call this method after parser.parse_args().
+        """
+        for attribute in self._propagate_attributes:
+            source = attribute.source
+            target = attribute.target
+            namespace[target] = namespace[source]
+
+    # protected methods
+
     def _add_arguments_to_writer(
             self,
             writer: dict_writers.AbstractDictWriter
@@ -174,13 +186,3 @@ class ArgsProvider:
                                                     propagate_data=new_propagate_data,
                                                     prohibited_args=new_prohibited_args,
                                                     no_provides=child_provider.no_provides)
-
-    def apply_propagations(self, namespace: Namespace) -> None:
-        """Applying arguments propagation.
-
-        Be sure to call this method after parser.parse_args().
-        """
-        for attribute in self._propagate_attributes:
-            source = attribute.source
-            target = attribute.target
-            namespace[target] = namespace[source]

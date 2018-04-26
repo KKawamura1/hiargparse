@@ -1,37 +1,49 @@
-import argparse
 from argparse import ArgumentParser as OriginalAP
-from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple, Callable, Any, Tuple
-from pathlib import Path
-from .arg_parse import ArgumentParser
-from .namespace import Namespace
+from typing import Iterable, AbstractSet, Dict, Set, List, NamedTuple
+from hiargparse import ArgumentParser, Namespace
+from hiargparse.hierarchy import format_parent_names, format_parent_names_and_key
+from hiargparse.file_protocols import dict_writers, dict_readers
+from hiargparse.miscs import if_none_then
+from .exceptions import ConflictError, ArgumentError
 from .child_provider import ChildProvider
 from .argument import Arg, PropagateState
-from .parent_names_to_str import parent_names_to_str
-from .exceptions import ConflictError, ArgumentError
-from . import dict_writers, dict_readers
-from .configure_file_type import ConfigureFileType
 
 
 class _PropagateAttribute(NamedTuple):
+    """Propagate value from x to y"""
     source: str
     target: str
 
 
 class ArgsProvider:
+    """A class that provides values to Args.
+
+    Use add_arguments_to_parser to register args.
+    Also it supports writing to/ reading from files.
+
+    Args:
+        args: arguments you want to register.
+        child_providers: providers you want to register as its children.
+        propagate_args: syntax sugar for args with propagate=True.
+    """
+
     def __init__(
             self,
-            args: Iterable[Arg] = list(),
-            child_providers: Iterable[ChildProvider] = list(),
-            propagate_args: Iterable[Arg] = list()
+            args: Iterable[Arg] = None,
+            child_providers: Iterable[ChildProvider] = None,
+            propagate_args: Iterable[Arg] = None
     ) -> None:
+        args = if_none_then(args, [])
+        child_providers = if_none_then(child_providers, [])
+        propagate_args = if_none_then(propagate_args, [])
         self._args = list(args)
         if propagate_args:
             for arg in propagate_args:
                 arg._pr_to_propagatable()
             self._args += propagate_args
         self._child_providers = child_providers
-        self._propagate_attributes: List[_PropagateAttribute] = list()
-        arg_dests = [arg._dest for arg in self._args]
+        self._propagate_attributes: List[_PropagateAttribute] = []
+        arg_dests = [arg.dest for arg in self._args]
         arg_dests += [provider.dest for provider in self._child_providers]
         if len(arg_dests) != len(set(arg_dests)):
             # dest is non-unique; abort
@@ -50,51 +62,33 @@ class ArgsProvider:
             self,
             parser: OriginalAP
     ) -> None:
-        self._add_arguments_recursively(root=self, parser=parser)
+        """Add its arguments to the given parser hierarchically."""
+        self._add_arguments_recursively(root=self, parser=parser,
+                                        writer=dict_writers.NullWriter(),
+                                        parent_names=[''], parent_dists=[], argument_prefixes=[],
+                                        propagate_data=dict(), prohibited_args=dict(),
+                                        no_provides=set())
         if isinstance(parser, ArgumentParser):
             parser.register_deferring_action(self.apply_propagations)
 
     def write_out_configure_arguments(
             self,
-            file_type: ConfigureFileType
+            writer: dict_writers.AbstractDictWriter
     ) -> str:
-        # access to protected attributes
-        help_instance = argparse.HelpFormatter(prog='')
-        expand_help_text_from_action: Callable[[argparse.Action], str]
-        expand_help_text_from_action = help_instance._expand_help  # type: ignore
-
-        def get_metavar_from_action(action: argparse.Action) -> List[str]:
-            assert action.option_strings
-            # access to protected attributes
-            tmp: Any = help_instance._get_default_metavar_for_optional(action)  # type: ignore
-            default_metavar: str = tmp
-            tmp: Any = help_instance._metavar_formatter(action, default_metavar)  # type: ignore
-            metavar: Tuple[str, ...] = tmp(1)
-            return list(metavar)
-
-        writer: dict_writers.AbstractDictWriter
-        if file_type is ConfigureFileType.toml:
-            writer = dict_writers.TOMLWriter(expand_help_text_from_action,
-                                             get_metavar_from_action)
-        elif file_type is ConfigureFileType.yaml:
-            writer = dict_writers.YAMLWriter(expand_help_text_from_action,
-                                             get_metavar_from_action)
+        """Return a string that represents its all arguments as given style."""
         self._add_arguments_to_writer(writer)
         return writer.write_out()
 
     def read_configure_arguments(
             self,
             document: str,
-            file_type: ConfigureFileType,
-            parser: OriginalAP = ArgumentParser()
+            reader: dict_readers.AbstractDictReader,
+            parser: OriginalAP = None
     ) -> Namespace:
-        reader: dict_readers.AbstractDictReader
-        if file_type is ConfigureFileType.toml:
-            reader = dict_readers.TOMLReader()
-        elif file_type is ConfigureFileType.yaml:
-            reader = dict_readers.YAMLReader()
+        """Read the given document as given style and return the parameters."""
+        parser = if_none_then(parser, ArgumentParser())
         contents = reader.to_normalized_dict(document)
-        args: List[str] = list()
+        args: List[str] = []
         for key, val in contents.items():
             if val is None:
                 continue
@@ -115,23 +109,27 @@ class ArgsProvider:
             self,
             writer: dict_writers.AbstractDictWriter
     ) -> None:
-        self._add_arguments_recursively(root=self, writer=writer)
+        self._add_arguments_recursively(root=self, parser=ArgumentParser(), writer=writer,
+                                        parent_names=[''], parent_dists=[], argument_prefixes=[],
+                                        propagate_data=dict(), prohibited_args=dict(),
+                                        no_provides=set())
 
     def _add_arguments_recursively(
             self,
             root: 'ArgsProvider',
-            parser: OriginalAP = ArgumentParser(),
-            writer: dict_writers.AbstractDictWriter = dict_writers.NullWriter(),
-            parent_names: List[str] = [''],
-            parent_dists: List[str] = list(),
-            argument_prefixes: List[str] = list(),
-            propagate_data: Dict[str, str] = dict(),
-            prohibited_args: Dict[str, str] = dict(),
-            no_provides: AbstractSet[str] = set()
+            parser: OriginalAP,
+            writer: dict_writers.AbstractDictWriter,
+            parent_names: List[str],
+            parent_dists: List[str],
+            argument_prefixes: List[str],
+            propagate_data: Dict[str, str],
+            prohibited_args: Dict[str, str],
+            no_provides: AbstractSet[str]
     ) -> None:
+        """Recursively collect informations and call arg._pr_add_argument."""
         new_propagate_data: Dict[str, str] = dict()
         new_prohibited_args: Dict[str, str] = dict()
-        group_name = parent_names_to_str(parent_names)
+        group_name = format_parent_names(parent_names)
         argument_group = parser.add_argument_group(group_name)
         for arg in self._args:
             if arg.main_name in no_provides:
@@ -151,7 +149,7 @@ class ArgsProvider:
             elif state is PropagateState.Prohibit:
                 # ready for prohibit
                 for target in returns.targets:
-                    new_prohibited_args[target] = parent_names_to_str(parent_names + [target])
+                    new_prohibited_args[target] = format_parent_names_and_key(parent_names, target)
             elif state is PropagateState.Propagated:
                 # set to propagate the value
                 assert returns.propagated_from is not None
@@ -178,6 +176,10 @@ class ArgsProvider:
                                                     no_provides=child_provider.no_provides)
 
     def apply_propagations(self, namespace: Namespace) -> None:
+        """Applying arguments propagation.
+
+        Be sure to call this method after parser.parse_args().
+        """
         for attribute in self._propagate_attributes:
             source = attribute.source
             target = attribute.target

@@ -1,10 +1,7 @@
-from hiargparse import ArgumentParser, Namespace
+from hiargparse import ArgumentParser
 from hiargparse import ArgsProvider, Arg, ChildProvider, ConfigureFileType
 from example import Son
-from complicated_example import Car
 
-import argparse
-from typing import Optional, Any
 from pathlib import Path
 from sys import exit
 
@@ -15,7 +12,7 @@ if __name__ == '__main__':
 
     args_provider = ArgsProvider(
         args=[
-            Arg('file-type', default='toml', choices=file_type_names),
+            Arg('file-type', default='yaml', choices=file_type_names),
             # write-to argument
             Arg('write-to', type=Path,
                 help='%(default-text)s Write a configure file in the given path and exit. '),
@@ -38,16 +35,17 @@ if __name__ == '__main__':
         path_w: Path = params.write_to
         # write configure arguments to the given file as the given type
         with path_w.open('w') as f:
-            f.write(args_provider.write_out_configure_arguments(file_type))
-        # when you want to write out a configure file,
-        # usually you want to stop this program, fill in your brand-new configure file,
-        # and then restart it, so I'll exit
+            f.write(args_provider.write_out_configure_arguments(file_type.get_writer()))
+        # When you want to write out a configure file,
+        # usually you want to stop this program, fill in
+        # your brand-new configure file, and then restart it.
+        # so I'll exit
         exit()
     if params.read_from is not None:
         path_r: Path = params.read_from
         # read configure arguments from the given file
         with path_r.open('r') as f:
-            read_params = args_provider.read_configure_arguments(f.read(), file_type)
+            read_params = args_provider.read_configure_arguments(f.read(), file_type.get_reader())
 
         # Usually you want to overwrite the parameters from the file
         # with the parameters from program arguments.
@@ -61,5 +59,6 @@ if __name__ == '__main__':
         params = parser.parse_args(namespace=read_params)
 
     print(params)
-    # please execute with --write-to / --read-from FILE_PATH
+    # try to execute with --write-to / --read-from FILE_PATH
     son = Son(params.Son)
+    Son.print_()

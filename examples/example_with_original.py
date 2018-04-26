@@ -9,7 +9,7 @@ from example import Son
 if __name__ == '__main__':
     # set a root argument provider (same as other argument providers)
     args_provider = ArgsProvider(
-        args=[Arg('foo', 'bar')],
+        args=[Arg(name='foo', default='bar')],
         child_providers=[ChildProvider(Son)]
     )
 
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('-V', '--version', action='version', version='v1.0')
 
     # here we have to write some weird code
-    # cast argparse.Namespace to hiargparse.Namespace
+
     # invoke args_provider's method with the parser
     # instead of parser's method with the args_provider
     args_provider.add_arguments_to_parser(parser)
@@ -36,3 +36,4 @@ if __name__ == '__main__':
     # please try to execute with --help
     print(params.foo)
     son = Son(params.Son)
+    son.print_()

@@ -2,17 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Union, Sequence, Any, List
 from contextlib import contextmanager
 from argparse import Action
+from hiargparse.dirty_accesses import DirtyAccessToArgparse
 
 
 class AbstractDictWriter(ABC):
-    @abstractmethod
-    def expand_help_text_from_action(self, action: Action) -> str:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get_metavar_from_action(self, action: Action) -> List[str]:
-        raise NotImplementedError()
-
     @abstractmethod
     def begin_section(self, name: str) -> None:
         raise NotImplementedError()
@@ -61,8 +54,8 @@ class AbstractDictWriter(ABC):
             dest: str,
             comment_outs: bool
     ) -> None:
-        help_text = self.expand_help_text_from_action(action)
-        metavar = self.get_metavar_from_action(action)
+        help_text = DirtyAccessToArgparse.expand_help_text_from_action(action)
+        metavar = DirtyAccessToArgparse.get_metavar_from_optional_action(action)
         nargs = action.nargs
         values: Union[str, List[str]]
         if nargs is None or nargs == 1:

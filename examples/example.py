@@ -13,7 +13,10 @@ class GrandSon:
         )
 
     def __init__(self, params: Namespace) -> None:
-        print(params.huga, params.piyo)
+        self._params = params
+
+    def print_(self) -> None:
+        print(self._params.huga, self._params.piyo)
 
 
 class Son:
@@ -33,14 +36,18 @@ class Son:
         )
 
     def __init__(self, params: Namespace) -> None:
+        self._params = params
+        self._gson = GrandSon(params.GS)
+
+    def print_(self) -> None:
         print(params.hoge, params.huga, params.piyo)
-        gson = GrandSon(params.GS)
+        self._gson.print_()
 
 
 if __name__ == '__main__':
     # set a root argument provider (same as other argument providers)
     args_provider = ArgsProvider(
-        args=[Arg('foo', 'bar')],
+        args=[Arg(name='foo', default='bar')],
         child_providers=[ChildProvider(Son)]
     )
 
@@ -54,3 +61,4 @@ if __name__ == '__main__':
     # please try to execute with --help
     print(params.foo)
     son = Son(params.Son)
+    son.print_()

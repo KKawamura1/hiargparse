@@ -1,7 +1,4 @@
-from .exceptions import ArgumentError, ConflictWarning, PropagationError, ConflictError
-from .child_provider import ChildProvider
-from .argument import Arg
-from .args_provider import ArgsProvider
-from .arg_parse import ArgumentParser
-from .namespace import Namespace
-from .configure_file_type import ConfigureFileType
+from hiargparse.namespace import Namespace
+from hiargparse.arg_parse import ArgumentParser
+from hiargparse.file_protocols import ConfigureFileType
+from hiargparse.args_providers import ArgsProvider, Arg, ChildProvider, ArgumentError, ConflictWarning, PropagationError, ConflictError

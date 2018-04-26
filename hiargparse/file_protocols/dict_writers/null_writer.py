@@ -1,6 +1,5 @@
 from .abstract_dict_writer import AbstractDictWriter
-from typing import List, Union, Sequence
-from argparse import Action
+from typing import Union, Sequence
 
 
 class NullWriter(AbstractDictWriter):
@@ -8,12 +7,6 @@ class NullWriter(AbstractDictWriter):
             self
     ) -> None:
         pass
-
-    def expand_help_text_from_action(self, action: Action) -> str:
-        return ''
-
-    def get_metavar_from_action(self, action: Action) -> List[str]:
-        return ['']
 
     def begin_section(self, name: str) -> None:
         pass

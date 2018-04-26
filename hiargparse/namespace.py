@@ -1,21 +1,23 @@
 from argparse import Namespace as OriginalNS
-from typing import Any, Dict, TypeVar, Mapping, Union, Type, List, Generator, ClassVar, ItemsView
-from .hierarchy import pop_child_name, get_child_dest_str
+from typing import Any, Dict, TypeVar, Mapping, Union, List, Generator, ClassVar, ItemsView
+from .hierarchy import parents_and_key_to_long_key, pop_highest_parent_name, iter_parents
 
 
 SpaceT = TypeVar('SpaceT', bound=OriginalNS)
 
 
 class Namespace(OriginalNS):
-    """A variant of argparse.Namespace
+    """A variant of argparse.Namespace.
 
     A variant with which you can
     + easily access to its child provider
     + easily convert to / from dictionary
     + store data in its separate dictionary instead of direct access
+
+    Its public methods are started with _ to follow collections.namedtuple.
     """
 
-    _container_set: ClassVar[str] = '==CONTAINER-SET=='
+    _setattr_injection_key: ClassVar[str] = '==SETATTR-INJECTION-KEY=='
 
     def __init__(self, copy_from: Union[SpaceT, Mapping[str, Any]] = None) -> None:
         self._sequential_data: Dict[str, Any] = dict()
@@ -38,9 +40,9 @@ class Namespace(OriginalNS):
         return True
 
     def __setattr__(self, key: str, value: Any) -> None:
-        # if _container_set not in self:
+        # if injection-key not in self:
         try:
-            object.__getattribute__(self, Namespace._container_set)
+            object.__getattribute__(self, Namespace._setattr_injection_key)
         except AttributeError:
             # then call normal method
             super().__setattr__(key, value)
@@ -85,67 +87,27 @@ class Namespace(OriginalNS):
     # referring to collections.namedtuple
 
     def _copy(self: SpaceT) -> SpaceT:
+        """Copy self and return it."""
         return type(self)(copy_from=self)
 
     def _update(
             self,
-            contents: Union[OriginalNS, Mapping[str, Any]],
-            converts_dict: bool = None
+            contents: Union[OriginalNS, Mapping[str, Any]]
     ) -> None:
+        """Overwrite self with given data."""
         if isinstance(contents, OriginalNS):
-            if converts_dict is None:
-                self._update_from_namespace(contents)
-            else:
-                self._update_from_namespace(contents, converts_dict)
+            self._update_from_namespace(contents)
         else:
-            if converts_dict is None:
-                self._update_from_dict(contents)
-            else:
-                self._update_from_dict(contents, converts_dict)
-
-    def _update_from_namespace(
-            self,
-            contents: OriginalNS,
-            converts_dict: bool = False
-    ) -> None:
-        if isinstance(contents, Namespace):
-            copy_from = contents._sequential_data
-        else:
-            copy_from = contents.__dict__
-        self._update_from_dict(copy_from, converts_dict)
-
-    def _update_from_dict(
-            self,
-            contents: Mapping[str, Any],
-            converts_dict: bool = True
-    ) -> None:
-        self._update_from_dict_recur(contents, converts_dict, parents=list())
-
-    def _update_from_dict_recur(
-            self,
-            contents: Mapping[str, Any],
-            converts_dict: bool,
-            parents: List[str]
-    ) -> None:
-        for key, val in contents.items():
-            if isinstance(val, dict) and converts_dict:
-                new_parents = parents + [key]
-                self._update_from_dict_recur(val, converts_dict, new_parents)
-            else:
-                new_key = get_child_dest_str(parents) + key
-                self[new_key] = val
+            self._update_from_dict(contents)
 
     def _replaced(self: SpaceT, **kwargs: Any) -> SpaceT:
+        """Return a copied self with its data replaced with given args."""
         target = self._copy()
         target._update(kwargs)
         return target
 
-    @classmethod
-    def make(cls: Type[SpaceT], contents: Mapping[str, Any]) -> SpaceT:
-        namespace = cls()
-        return namespace._update(contents)
-
     def _asdict(self) -> Dict[str, Any]:
+        """Convert self to an hierarchical dict and return it."""
         ret_dict: Dict[str, Any] = dict()
         for key, val in self._hierarchical_data.items():
             if isinstance(val, Namespace):
@@ -176,10 +138,10 @@ class Namespace(OriginalNS):
     # protected methods
 
     def _setattr_with_hierarchical_name(self, hierarchical_name: str, val: Any) -> None:
-        """set attribute
+        """Set attribute.
 
         Key may be a long hierarchical name
-        like <token>Foo</token><token>Bar</token>buz .
+        like <token>Foo</token><token>Bar</token>buz.
         We set the value as both the sequential (long-token-including-key: val)
         and hierarchical (key1: key2: key3: val) style.
         """
@@ -193,7 +155,7 @@ class Namespace(OriginalNS):
         self._sequential_data[hierarchical_name] = val
 
         # set hierarchical data
-        child_name, remain_key = pop_child_name(hierarchical_name)
+        child_name, remain_key = pop_highest_parent_name(hierarchical_name)
         if child_name is None:
             self._hierarchical_data[remain_key] = val
         else:
@@ -203,10 +165,10 @@ class Namespace(OriginalNS):
             self[child_name][remain_key] = val  # recursively registering
 
     def _getattr_with_hierarchical_name(self, hierarchical_name: str) -> Any:
-        """get attribute
+        """Get attribute.
 
         Key may be a long hierarchical name
-        like <token>Foo</token><token>Bar</token>buz .
+        like <token>Foo</token><token>Bar</token>buz.
         If the key in sequential data, it must not be a Namespace,
         so return seq[key].
         Otherwise, it may be in hierarchical data, so we search it.
@@ -219,13 +181,10 @@ class Namespace(OriginalNS):
         # search in hierarchical data
         try:
             target = self
-            remains_name = hierarchical_name
-            while True:
-                child_name, remains_name = pop_child_name(remains_name)
-                if child_name is None:
-                    break
-                target = target._hierarchical_data[child_name]
-            val = target._hierarchical_data[remains_name]
+            remains = hierarchical_name
+            for parent, remains in iter_parents(hierarchical_name):
+                target = target._hierarchical_data[parent]
+            val = target._hierarchical_data[remains]
             assert isinstance(val, Namespace)
             return val
         except KeyError as exc:
@@ -235,7 +194,38 @@ class Namespace(OriginalNS):
             raise AttributeError(error_msg) from None
 
     def _set_injection(self) -> None:
-        super().__setattr__(Namespace._container_set, None)
+        super().__setattr__(Namespace._setattr_injection_key, None)
 
     def _unset_injection(self) -> None:
-        super().__delattr__(Namespace._container_set)
+        super().__delattr__(Namespace._setattr_injection_key)
+
+    def _update_from_namespace(
+            self,
+            contents: OriginalNS
+    ) -> None:
+        if isinstance(contents, Namespace):
+            copy_from = contents._sequential_data
+        else:
+            copy_from = contents.__dict__
+        self._update_from_dict(copy_from, converts_dict=False)
+
+    def _update_from_dict(
+            self,
+            contents: Mapping[str, Any],
+            converts_dict: bool = True
+    ) -> None:
+        self._update_from_dict_recur(contents, converts_dict, parents=[])
+
+    def _update_from_dict_recur(
+            self,
+            contents: Mapping[str, Any],
+            converts_dict: bool,
+            parents: List[str]
+    ) -> None:
+        for key, val in contents.items():
+            if isinstance(val, dict) and converts_dict:
+                new_parents = parents + [key]
+                self._update_from_dict_recur(val, converts_dict, new_parents)
+            else:
+                new_key = parents_and_key_to_long_key(parents, key)
+                self[new_key] = val

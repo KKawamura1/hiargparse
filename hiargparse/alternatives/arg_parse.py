@@ -63,10 +63,12 @@ class ArgumentParser(OriginalAP):
         """Register an action to do after its parsing."""
         self._defer_actions.append(action)
 
-    def _do_deferred_actions(self, params: Namespace) -> None:
-        for action in self._defer_actions:
-            action(params)
-
     def get_default_parameters(self) -> Namespace:
         """Get defaults by passing no arguments to the parser."""
         return self.parse_args(args=[])
+
+    # protected
+
+    def _do_deferred_actions(self, params: Namespace) -> None:
+        for action in self._defer_actions:
+            action(params)

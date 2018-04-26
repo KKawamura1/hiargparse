@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Union, Sequence, Any, List
 from contextlib import contextmanager
 from argparse import Action
-from hiargparse.dirty_accesses import DirtyAccessToArgparse
+from hiargparse.miscs import DirtyAccessToArgparse
 
 
 class AbstractDictWriter(ABC):

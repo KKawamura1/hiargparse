@@ -5,7 +5,7 @@ from typing import Union, Sequence, Collection, Optional, Callable, TypeVar, Nam
 from typing import Dict, List, Any, Type
 from hiargparse.hierarchy import parents_and_key_to_long_key, format_parent_names_and_key
 from hiargparse.file_protocols.dict_writers import AbstractDictWriter
-from hiargparse.dirty_accesses import DirtyAccessToArgparse
+from hiargparse.miscs import DirtyAccessToArgparse
 from .exceptions import ArgumentError, ConflictWarning, PropagationError
 
 

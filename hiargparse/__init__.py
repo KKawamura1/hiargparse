@@ -3,7 +3,7 @@ from hiargparse.file_protocols import ConfigureFileType
 from hiargparse.args_providers import ArgsProvider, Arg, ChildProvider
 from hiargparse.args_providers import ArgumentError, ConflictWarning, PropagationError, ConflictError
 
-from hiargparse.version import VERSION as __VERSION__
+from hiargparse.version import __VERSION__
 
 __all__ = [
     'Namespace', 'ArgumentParser',

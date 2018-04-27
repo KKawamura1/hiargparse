@@ -22,7 +22,7 @@ _version_spec = importlib.util.spec_from_file_location('_version', location=str(
 _version = importlib.util.module_from_spec(_version_spec)
 assert _version_spec.loader is not None
 _version_spec.loader.exec_module(_version)
-VERSION = _version.__VERSION__  # type: ignore
+VERSION = _version.__version__  # type: ignore
 
 # classifiers
 classifiers = [

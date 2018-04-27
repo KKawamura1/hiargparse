@@ -1,6 +1,6 @@
 from .abstract_dict_reader import AbstractDictReader
 from typing import Dict, Any
-import importlib
+import importlib.util
 from .normalize_dict import normalize_dict
 from .added_double_hyphen import added_double_hyphen
 

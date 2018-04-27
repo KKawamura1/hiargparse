@@ -233,7 +233,7 @@ class Namespace(OriginalNS):
         for key, val in contents.items():
             if isinstance(val, dict) and converts_dict:
                 new_parents = parents + [key]
-                self._update_from_dict_recur(val, converts_dict, new_parents)
+                self.__update_from_dict_recur(val, converts_dict, new_parents)
             else:
                 new_key = parents_and_key_to_long_key(parents, key)
                 self[new_key] = val

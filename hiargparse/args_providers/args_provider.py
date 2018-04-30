@@ -171,7 +171,7 @@ class ArgsProvider:
         new_propagate_data.update(propagate_data)
         new_prohibited_args.update(prohibited_args)
         for child_provider in self._child_providers:
-            provider = child_provider.cls.get_args_provider()
+            provider = child_provider.get_args_provider()
             new_parent_dists = parent_dists + [child_provider.dest]
             if child_provider.prefix == '':
                 new_argument_prefixes = argument_prefixes

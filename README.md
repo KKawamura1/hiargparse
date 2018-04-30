@@ -3,6 +3,22 @@ Hierarchical Argparse
 
 Hiargparse is a hierarchical and highly sophisticated variant of [argparse](https://docs.python.org/3/library/argparse.html).
 
+## Minimal Code
+```python
+from hiargparse import ArgsProvider, Arg, ChildProvider, ArgumentParser
+
+child = ArgsProvider(
+    args=[Arg('baz', default=42)]
+)
+root = ArgsProvider(
+    args=[Arg('foo', default='bar')],
+    child_providers=[ChildProvider(provider=child, name='child')]
+)
+parser = ArgumentParser()
+parser.add_arguments_from_provider(root)
+print(parser.parse_args())
+```
+
 ## Description
 
 Hiargparse automatically generates the command-line arguments with your all classes in your tree-like module structures with minimal codings.
@@ -47,11 +63,11 @@ Use `git clone` and set `PYTHONPATH` to make hiargparse found by your python.
 
 ## Examples
 
-- See `/examples/example.py` to easy start.
-- You can use hiargparse with original ArgumentParser. See `/examples/example_with_original.py`.
-- If you want to use hiargparse without command-line arguments, see `/examples/example_without_program_arguments.py`.
-- `/examples/example_write_and_read.py` describes how to write and read the arguments with a configure file.
-- A lot of things you can do with hiargparse are shown in `/examples/complicated_example.py`.
+- See [`/examples/example.py`](https://github.com/KKawamura1/hiargparse/blob/master/examples/example.py) to easy start.
+- You can use hiargparse with original ArgumentParser. See [`/examples/example_with_original.py`](https://github.com/KKawamura1/hiargparse/blob/master/examples/example_with_original.py).
+- If you want to use hiargparse without command-line arguments, see [`/examples/example_without_program_arguments.py`](https://github.com/KKawamura1/hiargparse/blob/master/examples/example_without_program_arguments.py).
+- [`/examples/example_write_and_read.py`](https://github.com/KKawamura1/hiargparse/blob/master/examples/example_write_and_read.py) describes how to write and read the arguments with a configure file.
+- A lot of things you can do with hiargparse are shown in [`/examples/complicated_example.py`](https://github.com/KKawamura1/hiargparse/blob/master/examples/complicated_example.py).
 
 ## Contribution
 

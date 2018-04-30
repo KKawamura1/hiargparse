@@ -1,6 +1,9 @@
 Hierarchical Argparse
 ====
 
+[![PyPI](https://img.shields.io/pypi/v/hiargparse.svg)](https://pypi.org/project/hiargparse/)
+
+
 Hiargparse is a hierarchical and highly sophisticated variant of [argparse](https://docs.python.org/3/library/argparse.html).
 
 ## Minimal Code

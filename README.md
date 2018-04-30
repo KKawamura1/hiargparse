@@ -50,9 +50,9 @@ This module is inspired by rlpytorch.args_provider in [FacebookAIResearch/ELF](h
 
 ## Installation
 
-Use `git clone` and set `PYTHONPATH` to make hiargparse found by your python.
-
-(We are trying to register this module to the [PyPI](https://pypi.org), which allows you to simply use `pip install hiargparse`.)
+```bash
+pip install hiargparse
+```
 
 ## Requirements
 

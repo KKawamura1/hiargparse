@@ -39,11 +39,11 @@ Hiargparse passes the arguments directly to the classes without any black magics
 With this module, you can
 
 - easily make hierarchical (tree-like) command-line arguments with [argparse](https://docs.python.org/3/library/argparse.html)
- - Each argument is automatically help-texted and grouped into `argparse.ArgumentGroup`.
+  - Each argument is automatically help-texted and grouped into `argparse.ArgumentGroup`.
 - get a more useful Namespace object than the original
- - Accessing with dict-like key, getting the child Namespace, converting to/from dictionaries, and so on
+  - Accessing with dict-like key, getting the child Namespace, converting to/from dictionaries, and so on
 - write/read the arguments to/from  some configure files with well known formats
- - Currently we supports [yaml](http://yaml.org/) and [toml](https://github.com/toml-lang/toml).
+  - Currently we supports [yaml](http://yaml.org/) and [toml](https://github.com/toml-lang/toml).
 
 Also, this module
 
@@ -83,4 +83,4 @@ pip install hiargparse
 ## Author
 
 - Keigo Kawamura (Department of Electrical Engineering and Information Systems (EEIS), Graduate School of Engineering, The University of Tokyo)
- - kkawamura@logos.t.u-tokyo.ac.jp
+  - kkawamura@logos.t.u-tokyo.ac.jp

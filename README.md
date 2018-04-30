@@ -3,6 +3,22 @@ Hierarchical Argparse
 
 Hiargparse is a hierarchical and highly sophisticated variant of [argparse](https://docs.python.org/3/library/argparse.html).
 
+## Minimal Code
+```python
+from hiargparse import ArgsProvider, Arg, ChildProvider, ArgumentParser
+
+child = ArgsProvider(
+    args=[Arg('baz', default=42)]
+)
+root = ArgsProvider(
+    args=[Arg('foo', default='bar')],
+    child_providers=[ChildProvider(provider=child, name='child')]
+)
+parser = ArgumentParser()
+parser.add_arguments_from_provider(root)
+print(parser.parse_args())
+```
+
 ## Description
 
 Hiargparse automatically generates the command-line arguments with your all classes in your tree-like module structures with minimal codings.
